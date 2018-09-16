@@ -32,6 +32,7 @@ func main() {
 		if strings.HasPrefix(parts[0], os.Getenv("BOT_COMMAND_PREFIX")) {
 			if handler, ok := commands.CommandsMap[parts[0][1:]]; ok {
 				log.Printf("[COMMAND] Processing command '%s'\n", parts[0][1:])
+				m.Content = strings.Join(parts[1:], " ")
 				handler(s, m)
 			}
 		}

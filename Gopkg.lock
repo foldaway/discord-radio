@@ -38,12 +38,39 @@
   pruneopts = "UT"
   revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
 
+[[projects]]
+  branch = "master"
+  digest = "1:d6b719875cf8091fbab38527d81d34e71f4521b9ee9ccfbd4a32cff2ac5af96e"
+  name = "golang.org/x/net"
+  packages = [
+    "context",
+    "context/ctxhttp",
+  ]
+  pruneopts = "UT"
+  revision = "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2"
+
+[[projects]]
+  branch = "master"
+  digest = "1:4a10599027a01143103814efb6d62313d1a1b7f7b493c4504b241bf8272e123e"
+  name = "google.golang.org/api"
+  packages = [
+    "gensupport",
+    "googleapi",
+    "googleapi/internal/uritemplates",
+    "googleapi/transport",
+    "youtube/v3",
+  ]
+  pruneopts = "UT"
+  revision = "19ff8768a5c0b8e46ea281065664787eefc24121"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/bwmarrin/discordgo",
     "github.com/joho/godotenv",
+    "google.golang.org/api/googleapi/transport",
+    "google.golang.org/api/youtube/v3",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

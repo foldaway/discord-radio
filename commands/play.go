@@ -19,9 +19,41 @@ var tempSearchResultsCache = make(map[string][]*youtube.SearchResult)
 
 func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var b strings.Builder
-	if _, err := url.ParseRequestURI(m.Content); err == nil {
+	if url, err := url.ParseRequestURI(m.Content); err == nil {
 		// URL
-		log.Println("URL")
+		var videoIDs []string
+		if len(url.Query().Get("list")) != 0 {
+			// Playlist URL
+			playlistResponse, err := youtubeService.PlaylistItems.List("contentDetails").PlaylistId(url.Query().Get("list")).MaxResults(50).Do()
+			if err != nil {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error occurred: %s", err))
+				return
+			}
+			for _, playlistItem := range playlistResponse.Items {
+				videoIDs = append(videoIDs, playlistItem.ContentDetails.VideoId)
+			}
+		} else if len(url.Query().Get("v")) != 0 {
+			// Plain video URL
+			videoIDs = append(videoIDs, url.Query().Get("v"))
+		} else {
+			s.ChannelMessageSend(m.ChannelID, "Unsupported URL")
+			return
+		}
+		youtubeListings, err := youtubeService.Videos.List("snippet").Id(strings.Join(videoIDs, ",")).Do()
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error occurred: %s", err))
+			return
+		}
+		for _, youtubeListing := range youtubeListings.Items {
+			Queue = append(Queue, models.QueueItem{
+				Title:        youtubeListing.Snippet.Title,
+				ChannelTitle: youtubeListing.Snippet.ChannelTitle,
+				Author:       m.Author.Username,
+				VideoID:      youtubeListing.Id,
+			})
+		}
+
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s enqueued %d videos`\n", m.Author.Mention(), len(videoIDs)))
 	} else {
 		maxResults, _ := strconv.ParseInt(os.Getenv("BOT_NUM_RESULTS"), 10, 64)
 		call := youtubeService.Search.List("snippet").Q(m.Content).MaxResults(maxResults)

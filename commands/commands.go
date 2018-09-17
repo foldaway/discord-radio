@@ -35,4 +35,5 @@ func init() {
 	CommandsMap["play"] = play
 	CommandsMap["suicide"] = suicide
 	CommandsMap["skip"] = skip
+	CommandsMap["join"] = join
 }

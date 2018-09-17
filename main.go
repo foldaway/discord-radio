@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/bottleneckco/radio-clerk/commands"
+	"github.com/bottleneckco/radio-clerk/util"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 )
@@ -38,6 +39,23 @@ func main() {
 		}
 	})
 
+	dg.AddHandler(func(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
+		if commands.VoiceConnection == nil {
+			return
+		}
+		channel, err := s.Channel(commands.VoiceConnection.ChannelID)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if channel.ID == commands.VoiceConnection.ChannelID && len(util.GetUsersInVoiceChannel(s, commands.VoiceConnection.ChannelID)) == 1 {
+			// Only bot left
+			log.Println("Leaving, only me left in voice channel.")
+			commands.VoiceConnection.Disconnect()
+			commands.VoiceConnection = nil
+		}
+	})
+
 	err = dg.Open()
 	if err != nil {
 		log.Panic(err)
@@ -48,6 +66,10 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
+
+	if commands.VoiceConnection != nil {
+		commands.VoiceConnection.Disconnect()
+	}
 
 	// Cleanly close down the Discord session.
 	dg.Close()

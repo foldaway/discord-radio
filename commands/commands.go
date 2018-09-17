@@ -34,4 +34,5 @@ func init() {
 	CommandsMap["queue"] = queue
 	CommandsMap["play"] = play
 	CommandsMap["suicide"] = suicide
+	CommandsMap["skip"] = skip
 }

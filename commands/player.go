@@ -22,8 +22,8 @@ const (
 type Player struct {
 	StartTime time.Time
 	IsPlaying bool
-	Close     <-chan struct{}
-	Control   <-chan controlMessage
+	Close     chan struct{}
+	Control   chan controlMessage
 }
 
 var debug = false

@@ -16,7 +16,10 @@ var CommandsMap = make(map[string]func(*discordgo.Session, *discordgo.MessageCre
 var Queue []models.QueueItem // current item = index 0
 var VoiceConnection *discordgo.VoiceConnection
 var youtubeService *youtube.Service
-var player = &Player{}
+var player = &Player{
+	Close:   make(chan struct{}),
+	Control: make(chan controlMessage),
+}
 
 func init() {
 	godotenv.Load()
@@ -37,4 +40,6 @@ func init() {
 	CommandsMap["suicide"] = suicide
 	CommandsMap["skip"] = skip
 	CommandsMap["join"] = join
+	CommandsMap["pause"] = pause
+	CommandsMap["resume"] = resume
 }

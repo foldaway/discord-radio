@@ -10,7 +10,7 @@ import (
 )
 
 func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if len(Queue) == 0 {
+	if len(Queue) == 0 || !player.IsPlaying {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing to skip", m.Author.Mention()))
 		return
 	}
@@ -18,7 +18,8 @@ func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if len(m.Content) == 0 {
 		// No args, skip current
 		skippedItem = Queue[0]
-		Queue = append(Queue[:0], Queue[1:]...)
+		// Queue = append(Queue[:0], Queue[1:]...)
+		player.Control <- Skip
 	} else {
 		choice, err := strconv.ParseInt(m.Content, 10, 64)
 		if err == nil && (choice-1 >= 0 && choice-1 < int64(len(Queue))) {

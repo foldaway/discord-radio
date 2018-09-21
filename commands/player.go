@@ -6,9 +6,15 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
+	"net/url"
 	"os"
 	"os/exec"
 	"time"
+
+	"google.golang.org/api/youtube/v3"
+
+	"github.com/bottleneckco/radio-clerk/models"
 )
 
 type controlMessage int
@@ -172,18 +178,79 @@ func (p *Player) Play(url string) {
 	}
 }
 
+func GenerateAutoPlaylistQueueItem() (models.QueueItem, error) {
+	var data models.QueueItem
+	parsedURI, err := url.ParseRequestURI(os.Getenv("BOT_AUTO_PLAYLIST"))
+	if err != nil {
+		return data, err
+	}
+	var listings []*youtube.PlaylistItem
+	var pageToken string
+	for {
+		youtubeListings, err := youtubeService.PlaylistItems.List("contentDetails").PlaylistId(parsedURI.Query().Get("list")).MaxResults(50).PageToken(pageToken).Do()
+		if err != nil {
+			return data, err
+		}
+		listings = append(listings, youtubeListings.Items...)
+		pageToken = youtubeListings.NextPageToken
+		if len(pageToken) == 0 {
+			break
+		}
+	}
+
+	log.Printf("[AP] Fetched %d items\n", len(listings))
+
+	rand.Seed(time.Now().Unix())
+
+	var chosenListing *youtube.PlaylistItem
+
+	for {
+		chosenListing = listings[rand.Intn(len(listings))]
+		if previousAutoPlaylistListing != nil && previousAutoPlaylistListing.ContentDetails.VideoId != chosenListing.ContentDetails.VideoId {
+			previousAutoPlaylistListing = chosenListing
+			break
+		} else {
+			break
+		}
+	}
+
+	log.Printf("[AP] Chosen v='%s'\n", chosenListing.ContentDetails.VideoId)
+
+	chosenListingSnippets, err := youtubeService.Videos.List("snippet").Id(chosenListing.ContentDetails.VideoId).Do()
+	if err != nil {
+		return data, err
+	}
+	chosenListingSnippet := chosenListingSnippets.Items[0]
+
+	data = models.QueueItem{
+		Title:        chosenListingSnippet.Snippet.Title,
+		ChannelTitle: chosenListingSnippet.Snippet.ChannelTitle,
+		Author:       "AutoPlaylist",
+		VideoID:      chosenListing.ContentDetails.VideoId,
+	}
+	return data, nil
+}
+
 func SafeCheckPlay() {
 	if VoiceConnection == nil {
 		log.Println("[SCP] no voice connection")
 		return
 	}
-	if len(Queue) == 0 {
-		log.Println("[SCP] no items in queue")
-		return
-	}
 	if player.IsPlaying {
 		log.Println("[SCP] currently playing something!")
 		return
+	}
+	if len(Queue) == 0 && len(os.Getenv("BOT_AUTO_PLAYLIST")) == 0 {
+		log.Println("[SCP] no items in queue")
+		return
+	} else if len(Queue) == 0 {
+		log.Println("[SCP] Getting from auto playlist")
+		queueItem, err := GenerateAutoPlaylistQueueItem()
+		if err != nil {
+			log.Printf("[SCP] Error generating auto playlist item: %s\n", err)
+			return
+		}
+		Queue = append(Queue, queueItem)
 	}
 	var song = Queue[0]
 	player.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID))

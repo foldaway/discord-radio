@@ -25,4 +25,5 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	VoiceConnection = voiceChannel
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s joined '%s'", m.Author.Mention(), channel.Name))
+	SafeCheckPlay()
 }

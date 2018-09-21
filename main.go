@@ -51,6 +51,7 @@ func main() {
 		if channel.ID == commands.VoiceConnection.ChannelID && len(util.GetUsersInVoiceChannel(s, commands.VoiceConnection.ChannelID)) == 1 {
 			// Only bot left
 			log.Println("Leaving, only me left in voice channel.")
+			s.UpdateStatus(1, "")
 			commands.VoiceConnection.Disconnect()
 			commands.VoiceConnection = nil
 		}

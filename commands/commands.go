@@ -44,4 +44,5 @@ func init() {
 	CommandsMap["join"] = join
 	CommandsMap["pause"] = pause
 	CommandsMap["resume"] = resume
+	CommandsMap["help"] = help
 }

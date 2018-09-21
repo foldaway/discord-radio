@@ -18,6 +18,10 @@ import (
 var tempSearchResultsCache = make(map[string][]*youtube.SearchResult)
 
 func play(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if VoiceConnection == nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s I am not in any voice channel", m.Author.Mention()))
+		return
+	}
 	var b strings.Builder
 	if url, err := url.ParseRequestURI(m.Content); err == nil {
 		// URL
@@ -52,7 +56,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 				VideoID:      youtubeListing.Id,
 			})
 		}
-
+		SafeCheckPlay()
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s enqueued %d videos`\n", m.Author.Mention(), len(videoIDs)))
 	} else {
 		maxResults, _ := strconv.ParseInt(os.Getenv("BOT_NUM_RESULTS"), 10, 64)
@@ -100,6 +104,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			delete(tempSearchResultsCache, mm.Author.ID)
 			awaitFuncRemove()
+			SafeCheckPlay()
 		})
 	}
 

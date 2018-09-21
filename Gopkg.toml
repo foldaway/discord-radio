@@ -40,3 +40,11 @@
 [[constraint]]
   branch = "master"
   name = "google.golang.org/api"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/bwmarrin/dgvoice"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/bwmarrin/dca"

@@ -16,6 +16,7 @@ var CommandsMap = make(map[string]func(*discordgo.Session, *discordgo.MessageCre
 var Queue []models.QueueItem // current item = index 0
 var VoiceConnection *discordgo.VoiceConnection
 var youtubeService *youtube.Service
+var player = &Player{}
 
 func init() {
 	godotenv.Load()

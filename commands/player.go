@@ -42,7 +42,7 @@ func (p *Player) Play(url string) {
 		return
 	}
 	ytdlbuf := bufio.NewReaderSize(ytdlout, 16384)
-	ffmpeg := exec.Command("ffmpeg", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "pipe:1")
+	ffmpeg := exec.Command("ffmpeg", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "-af", fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=0.95,volume=%s", os.Getenv("BOT_VOLUME")), "-b:a", "256k", "pipe:1")
 	ffmpeg.Stdin = ytdlbuf
 	if debug {
 		ffmpeg.Stderr = os.Stderr

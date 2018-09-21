@@ -222,6 +222,8 @@ func GenerateAutoPlaylistQueueItem() (models.QueueItem, error) {
 	}
 	chosenListingSnippet := chosenListingSnippets.Items[0]
 
+	log.Printf("[AP] Chosen video '%s' by '%s'\n", chosenListingSnippet.Snippet.Title, chosenListingSnippet.Snippet.ChannelTitle)
+
 	data = models.QueueItem{
 		Title:        chosenListingSnippet.Snippet.Title,
 		ChannelTitle: chosenListingSnippet.Snippet.ChannelTitle,
@@ -253,6 +255,7 @@ func SafeCheckPlay() {
 		Queue = append(Queue, queueItem)
 	}
 	var song = Queue[0]
+	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
 	player.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID))
 	Queue = Queue[1:]
 	go SafeCheckPlay()

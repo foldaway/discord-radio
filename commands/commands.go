@@ -21,6 +21,7 @@ var player = &Player{
 	Close:   make(chan struct{}),
 	Control: make(chan controlMessage),
 }
+var GameUpdateFunc func(game string)
 
 func init() {
 	godotenv.Load()

@@ -56,6 +56,10 @@ func main() {
 		}
 	})
 
+	commands.GameUpdateFunc = func(game string) {
+		dg.UpdateStatus(0, game)
+	}
+
 	err = dg.Open()
 	if err != nil {
 		log.Panic(err)

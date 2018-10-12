@@ -52,8 +52,12 @@ func main() {
 			// Only bot left
 			log.Println("Leaving, only me left in voice channel.")
 			s.UpdateStatus(1, "")
-			commands.VoiceConnection.Disconnect()
+			var tempVoiceConn = commands.VoiceConnection
 			commands.VoiceConnection = nil
+
+			commands.Queue = commands.Queue[0:0]
+			commands.MusicPlayer.Close <- struct{}{}
+			tempVoiceConn.Disconnect()
 		}
 	})
 

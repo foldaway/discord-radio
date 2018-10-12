@@ -17,9 +17,9 @@ var Queue []models.QueueItem // current item = index 0
 var VoiceConnection *discordgo.VoiceConnection
 var youtubeService *youtube.Service
 var previousAutoPlaylistListing *youtube.PlaylistItem
-var player = &Player{
+var MusicPlayer = &Player{
 	Close:   make(chan struct{}),
-	Control: make(chan controlMessage),
+	Control: make(chan ControlMessage),
 }
 var GameUpdateFunc func(game string)
 

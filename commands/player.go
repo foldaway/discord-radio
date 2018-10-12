@@ -17,10 +17,10 @@ import (
 	"github.com/bottleneckco/radio-clerk/models"
 )
 
-type controlMessage int
+type ControlMessage int
 
 const (
-	Skip controlMessage = iota
+	Skip ControlMessage = iota
 	Pause
 	Resume
 )
@@ -29,7 +29,7 @@ type Player struct {
 	StartTime time.Time
 	IsPlaying bool
 	Close     chan struct{}
-	Control   chan controlMessage
+	Control   chan ControlMessage
 }
 
 var debug = false
@@ -107,14 +107,20 @@ func (p *Player) Play(url string) {
 	var opuslen int16
 
 	// Send "speaking" packet over the voice websocket
-	VoiceConnection.Speaking(true)
+	if VoiceConnection != nil {
+		VoiceConnection.Speaking(true)
+	}
 
 	// Send not "speaking" packet over the websocket when we finish
-	defer VoiceConnection.Speaking(false)
+	defer func() {
+		if VoiceConnection != nil {
+			VoiceConnection.Speaking(false)
+		}
+	}()
 
 	p.StartTime = time.Now()
-	for {
 
+	for {
 		select {
 		case <-p.Close:
 			log.Println("play() exited due to close channel.")
@@ -126,6 +132,7 @@ func (p *Player) Play(url string) {
 		case ctl := <-p.Control:
 			switch ctl {
 			case Skip:
+				log.Println("received skip")
 				return
 			case Pause:
 				done := false
@@ -174,7 +181,12 @@ func (p *Player) Play(url string) {
 		}
 
 		// Send received PCM to the sendPCM channel
-		VoiceConnection.OpusSend <- opus
+		if VoiceConnection != nil {
+			VoiceConnection.OpusSend <- opus
+		} else {
+			log.Println("[PLAYER] VoiceConnection nil, terminating OPUS transmission")
+			return
+		}
 	}
 }
 
@@ -238,7 +250,7 @@ func SafeCheckPlay() {
 		log.Println("[SCP] no voice connection")
 		return
 	}
-	if player.IsPlaying {
+	if MusicPlayer.IsPlaying {
 		log.Println("[SCP] currently playing something!")
 		return
 	}
@@ -256,7 +268,11 @@ func SafeCheckPlay() {
 	}
 	var song = Queue[0]
 	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
-	player.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID))
-	Queue = Queue[1:]
-	go SafeCheckPlay()
+	MusicPlayer.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID))
+	if len(Queue) > 0 {
+		Queue = Queue[1:]
+	}
+	if VoiceConnection != nil {
+		go SafeCheckPlay()
+	}
 }

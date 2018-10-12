@@ -7,10 +7,10 @@ import (
 )
 
 func resume(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if !player.IsPlaying {
+	if !MusicPlayer.IsPlaying {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing to resume", m.Author.Mention()))
 		return
 	}
-	player.Control <- Resume
+	MusicPlayer.Control <- Resume
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s resumed", m.Author.Mention()))
 }

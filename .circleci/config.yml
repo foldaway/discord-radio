@@ -40,4 +40,4 @@ workflows:
             - build
           filters:
             branches:
-              only: add-ci
+              only: master

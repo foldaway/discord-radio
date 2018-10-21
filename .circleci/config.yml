@@ -21,6 +21,10 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - run:
+          name: Setup Environment Variables
+          command: |
+            echo 'export TRAVIS_TAG="$CIRCLE_SHA1"' >> $BASH_ENV
       - run: gem install dpl
       - run: dpl --provider=releases --repo=bottleneckco/radio-clerk "--release-number=$CIRCLE_BRANCH-$CIRCLE_SHA1-$CIRCLE_BUILD_NUM" --api-key=$GITHUB_TOKEN --file=radio-clerk --prerelease
 workflows:

@@ -9,5 +9,6 @@ jobs:
           path: /go/src/github.com/$CIRCLE_PROJECT_USERNAME
 
       # specify any bash command here prefixed with `run: `
+      - run: pwd
       - run: dep ensure -vendor-only
       - run: go build -a -o $CIRCLE_PROJECT_REPONAME .

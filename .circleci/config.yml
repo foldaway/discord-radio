@@ -8,6 +8,18 @@ jobs:
       - checkout
 
       # specify any bash command here prefixed with `run: `
-      - run: pwd
       - run: dep ensure -vendor-only
-      - run: go build -a -o $CIRCLE_PROJECT_REPONAME .
+      - run: go build -a -o radio-clerk .
+      - persist_to_workspace:
+          root: .
+          paths:
+            - radio-clerk
+  deploy:
+    docker:
+        - image: ruby:2.5
+    working_directory: /tmp
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run: gem install dpl
+      - run: dpl --provider=releases --repo=bottleneckco/radio-clerk "--release-number=$CIRCLE_BRANCH-$CIRCLE_SHA1-$CIRCLE_BUILD_NUM" --api-key=$GITHUB_TOKEN --file=radio-clerk --prerelease

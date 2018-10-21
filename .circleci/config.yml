@@ -2,12 +2,12 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.9
-    working_directory: /go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+      - image: circleci/golang:1.10.4
     steps:
+      - run: mkdir -p /go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+      - run: cd /go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
       - checkout
 
       # specify any bash command here prefixed with `run: `
-      - run: go get -u github.com/golang/dep/cmd/dep
       - run: dep ensure -vendor-only
       - run: go build -a -o $CIRCLE_PROJECT_REPONAME .

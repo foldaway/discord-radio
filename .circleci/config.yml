@@ -3,10 +3,10 @@ jobs:
   build:
     docker:
       - image: circleci/golang:1.10.4
-    working_directory: /go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+    working_directory: /go/src/github.com/bottleneckco/radio-clerk
     steps:
       - checkout:
-          path: /go/src/github.com/$CIRCLE_PROJECT_USERNAME
+          path: /go/src/github.com/bottleneckco
 
       # specify any bash command here prefixed with `run: `
       - run: pwd

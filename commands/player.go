@@ -215,24 +215,31 @@ func GenerateAutoPlaylistQueueItem() (models.QueueItem, error) {
 	rand.Seed(time.Now().Unix())
 
 	var chosenListing *youtube.PlaylistItem
+	var chosenListingSnippet *youtube.Video
 
 	for {
-		chosenListing = listings[rand.Intn(len(listings))]
-		if previousAutoPlaylistListing != nil && previousAutoPlaylistListing.ContentDetails.VideoId != chosenListing.ContentDetails.VideoId {
-			previousAutoPlaylistListing = chosenListing
-			break
-		} else {
-			break
+		for {
+			chosenListing = listings[rand.Intn(len(listings))]
+			if previousAutoPlaylistListing != nil && previousAutoPlaylistListing.ContentDetails.VideoId != chosenListing.ContentDetails.VideoId {
+				previousAutoPlaylistListing = chosenListing
+				break
+			} else {
+				break
+			}
 		}
-	}
 
-	log.Printf("[AP] Chosen v='%s'\n", chosenListing.ContentDetails.VideoId)
+		log.Printf("[AP] Chosen v='%s'\n", chosenListing.ContentDetails.VideoId)
 
-	chosenListingSnippets, err := youtubeService.Videos.List("snippet").Id(chosenListing.ContentDetails.VideoId).Do()
-	if err != nil {
-		return data, err
+		chosenListingSnippets, err := youtubeService.Videos.List("snippet").Id(chosenListing.ContentDetails.VideoId).Do()
+		if err != nil {
+			return data, err
+		}
+		if len(chosenListingSnippets.Items) == 0 {
+			continue
+		}
+		chosenListingSnippet = chosenListingSnippets.Items[0]
+		break
 	}
-	chosenListingSnippet := chosenListingSnippets.Items[0]
 
 	log.Printf("[AP] Chosen video '%s' by '%s'\n", chosenListingSnippet.Snippet.Title, chosenListingSnippet.Snippet.ChannelTitle)
 

@@ -5,8 +5,7 @@ jobs:
       - image: circleci/golang:1.10.4
     working_directory: /go/src/github.com/bottleneckco/radio-clerk
     steps:
-      - checkout:
-          path: /go/src/github.com/bottleneckco
+      - checkout
 
       # specify any bash command here prefixed with `run: `
       - run: pwd

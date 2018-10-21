@@ -16,17 +16,16 @@ jobs:
             - radio-clerk
   deploy:
     docker:
-        - image: ruby:2.5
+        - image: circleci/golang:1.10.4
     working_directory: /tmp
     steps:
       - attach_workspace:
-          at: /tmp/workspace
+          at: ./artifacts
       - run:
-          name: Setup Environment Variables
+          name: "Publish Release on GitHub"
           command: |
-            echo 'export TRAVIS_TAG="$CIRCLE_SHA1"' >> $BASH_ENV
-      - run: gem install dpl
-      - run: dpl --provider=releases --repo=bottleneckco/radio-clerk "--release-number=$CIRCLE_BRANCH-$CIRCLE_SHA1-$CIRCLE_BUILD_NUM" --api-key=$GITHUB_TOKEN --file=radio-clerk --prerelease
+            go get github.com/tcnksm/ghr
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete "${CIRCLE_SHA1}-${CIRCLE_BUILD_NUM}" ./artifacts/
 workflows:
   version: 2
   build-and-deploy:

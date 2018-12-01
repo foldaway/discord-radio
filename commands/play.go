@@ -23,6 +23,17 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	var b strings.Builder
+	// Terminate if user has a pending search, forgets and uses /play again.
+	if items, ok := tempSearchResultsCache[m.Author.ID]; ok {
+		b.WriteString(fmt.Sprintf("%s, you **already have** a pending search query:\n", m.Author.Mention()))
+
+		for index, item := range items {
+			b.WriteString(fmt.Sprintf("`%d.` **%s** `%s`\n", index+1, item.Snippet.Title, item.Snippet.ChannelTitle))
+		}
+		b.WriteString("\nreply with a single number, no command needed. Anything else will cancel the search.")
+		s.ChannelMessageSend(m.ChannelID, b.String())
+		return
+	}
 	if url, err := url.ParseRequestURI(m.Content); err == nil {
 		// URL
 		var videoIDs []string
@@ -83,6 +94,9 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		awaitFuncRemove = s.AddHandler(func(ss *discordgo.Session, mm *discordgo.MessageCreate) {
 			if m.Author.ID != mm.Author.ID {
+				return
+			}
+			if strings.HasPrefix(mm.Content, os.Getenv("BOT_COMMAND_PREFIX")) {
 				return
 			}
 			choice, err := strconv.ParseInt(mm.Content, 10, 64)

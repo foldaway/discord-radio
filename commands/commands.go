@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/bottleneckco/radio-clerk/models"
 	"github.com/bwmarrin/discordgo"
@@ -45,4 +46,9 @@ func init() {
 	CommandsMap["pause"] = pause
 	CommandsMap["resume"] = resume
 	CommandsMap["help"] = help
+}
+
+func deleteMessageDelayed(sess *discordgo.Session, msg *discordgo.Message) {
+	time.Sleep(20 * time.Second)
+	sess.ChannelMessageDelete(msg.ChannelID, msg.ID)
 }

@@ -31,7 +31,10 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 			b.WriteString(fmt.Sprintf("`%d.` **%s** `%s`\n", index+1, item.Snippet.Title, item.Snippet.ChannelTitle))
 		}
 		b.WriteString("\nreply with a single number, no command needed. Anything else will cancel the search.")
-		s.ChannelMessageSend(m.ChannelID, b.String())
+		sentMsg, err := s.ChannelMessageSend(m.ChannelID, b.String())
+		if err == nil {
+			go deleteMessageDelayed(s, sentMsg)
+		}
 		return
 	}
 	if url, err := url.ParseRequestURI(m.Content); err == nil {
@@ -122,5 +125,8 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 		})
 	}
 
-	s.ChannelMessageSend(m.ChannelID, b.String())
+	sentMsg, err := s.ChannelMessageSend(m.ChannelID, b.String())
+	if err == nil {
+		go deleteMessageDelayed(s, sentMsg)
+	}
 }

@@ -1,0 +1,7 @@
+version: '3'
+services:
+  radio-clerk:
+    build: .
+    env_file:
+      - .env
+    restart: unless-stopped

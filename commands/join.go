@@ -5,6 +5,7 @@ import (
 
 	"github.com/bottleneckco/radio-clerk/util"
 	"github.com/bwmarrin/discordgo"
+	"github.com/evalphobia/google-tts-go/googletts"
 )
 
 func join(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -25,5 +26,7 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	VoiceConnection = voiceChannel
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s joined '%s'", m.Author.Mention(), channel.Name))
+	url, _ := googletts.GetTTSURL("Hello!", "en")
+	MusicPlayer.Play(url)
 	SafeCheckPlay()
 }

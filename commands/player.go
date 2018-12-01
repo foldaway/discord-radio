@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"google.golang.org/api/youtube/v3"
@@ -38,7 +39,12 @@ var debug = false
 
 func (p *Player) Play(url string) {
 	p.IsPlaying = true
-	ytdl := exec.Command("youtube-dl", "-v", "-f", "bestaudio[abr>=130]", "-o", "-", url)
+	args := []string{"-v"}
+	if strings.Contains(url, "youtube.com") {
+		args = append(args, "-f", "bestaudio[abr>=130]")
+	}
+	args = append(args, "-o", "-", url)
+	ytdl := exec.Command("youtube-dl", args...)
 	if debug {
 		ytdl.Stderr = os.Stderr
 	}

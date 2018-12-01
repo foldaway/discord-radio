@@ -7,10 +7,12 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/bottleneckco/radio-clerk/commands"
 	"github.com/bottleneckco/radio-clerk/util"
 	"github.com/bwmarrin/discordgo"
+	"github.com/evalphobia/google-tts-go/googletts"
 	"github.com/joho/godotenv"
 )
 
@@ -48,7 +50,36 @@ func main() {
 			log.Println(err)
 			return
 		}
-		if channel.ID == commands.VoiceConnection.ChannelID && len(util.GetUsersInVoiceChannel(s, commands.VoiceConnection.ChannelID)) == 1 {
+		if channel.ID != commands.VoiceConnection.ChannelID {
+			// Not my voice channel
+			return
+		}
+
+		var ttsMsg string
+		guildMember, err := s.GuildMember(vsu.GuildID, vsu.UserID)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		userVoiceState, err := util.FindUserVoiceState(s, vsu.UserID)
+		if err != nil || channel.ID != userVoiceState.ChannelID { // User dc all voice || User change voice chan
+			// User disconnected from all voice channels
+			ttsMsg = fmt.Sprintf("Goodbye, %s", guildMember.Nick)
+		} else { // User joined this channel
+			ttsMsg = fmt.Sprintf("Welcome, %s", guildMember.Nick)
+		}
+		url, _ := googletts.GetTTSURL(ttsMsg, "en")
+		var isSomethingPlaying = commands.MusicPlayer.IsPlaying
+		if isSomethingPlaying {
+			commands.MusicPlayer.Control <- commands.Pause
+		}
+		commands.MusicPlayer.Play(url)
+		time.Sleep(3500 * time.Millisecond)
+		if isSomethingPlaying {
+			commands.MusicPlayer.Control <- commands.Resume
+		}
+
+		if len(util.GetUsersInVoiceChannel(s, commands.VoiceConnection.ChannelID)) == 1 {
 			// Only bot left
 			log.Println("Leaving, only me left in voice channel.")
 			s.UpdateStatus(1, "")

@@ -48,3 +48,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/bwmarrin/dca"
+
+[[constraint]]
+  name = "github.com/evalphobia/google-tts-go"
+  version = "0.3.0"

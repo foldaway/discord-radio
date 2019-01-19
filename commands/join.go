@@ -33,7 +33,7 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 		updateCmd := exec.Command("/usr/bin/curl", "-L", "https://yt-dl.org/downloads/latest/youtube-dl", "-o", "/usr/local/bin/youtube-dl")
 		updateCmd.Stdout = os.Stdout
 		updateCmd.Stderr = os.Stderr
-		updateCmd.Wait()
+		updateCmd.Run()
 	}
 	MusicPlayer.Play(url, "0.5")
 	SafeCheckPlay()

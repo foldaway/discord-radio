@@ -35,32 +35,26 @@ type Player struct {
 	Control   chan ControlMessage
 }
 
-var debug = false
-
 // Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go
 
 func (p *Player) Play(url, volume string) {
 	p.IsPlaying = true
-	args := []string{"-v"}
+	args := []string{"-q"}
 	if strings.Contains(url, "youtube.com") {
 		args = append(args, "-f", "bestaudio[abr>=130]")
 	}
 	args = append(args, "-o", "-", url)
 	ytdl := exec.Command("youtube-dl", args...)
-	if debug {
-		ytdl.Stderr = os.Stderr
-	}
+	ytdl.Stderr = os.Stderr
 	ytdlout, err := ytdl.StdoutPipe()
 	if err != nil {
 		log.Println("ytdl StdoutPipe err:", err)
 		return
 	}
 	ytdlbuf := bufio.NewReaderSize(ytdlout, 16384)
-	ffmpeg := exec.Command("ffmpeg", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "-af", fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=0.95,volume=%s", volume), "-b:a", "256k", "pipe:1")
+	ffmpeg := exec.Command("ffmpeg", "-hide_banner", "-nostats", "-loglevel", "error", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "-af", fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=0.95,volume=%s", volume), "-b:a", "256k", "pipe:1")
 	ffmpeg.Stdin = ytdlbuf
-	if debug {
-		ffmpeg.Stderr = os.Stderr
-	}
+	ffmpeg.Stderr = os.Stderr
 	ffmpegout, err := ffmpeg.StdoutPipe()
 	if err != nil {
 		log.Println("ffmpeg StdoutPipe err:", err)
@@ -70,9 +64,7 @@ func (p *Player) Play(url, volume string) {
 
 	dca := exec.Command("dca")
 	dca.Stdin = ffmpegbuf
-	if debug {
-		dca.Stderr = os.Stderr
-	}
+	dca.Stderr = os.Stderr
 	dcaout, err := dca.StdoutPipe()
 	if err != nil {
 		log.Println("dca StdoutPipe err:", err)

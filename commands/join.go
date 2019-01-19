@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 
 	"github.com/bottleneckco/radio-clerk/util"
 	"github.com/bwmarrin/discordgo"
@@ -26,7 +28,11 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	VoiceConnection = voiceChannel
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s joined '%s'", m.Author.Mention(), channel.Name))
-	url, _ := googletts.GetTTSURL("Hello!", "en")
+	url, _ := googletts.GetTTSURL("Hello! I'll be ready in a moment.", "en")
+	if os.Getenv("BOT_UPDATE_YTDL") == "true" {
+		updateCmd := exec.Command("/usr/bin/curl", "-L", "https://yt-dl.org/downloads/latest/youtube-dl", "-o", "/usr/local/bin/youtube-dl")
+		updateCmd.Wait()
+	}
 	MusicPlayer.Play(url, "0.5")
 	SafeCheckPlay()
 }

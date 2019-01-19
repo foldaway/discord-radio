@@ -4,4 +4,6 @@ services:
     build: .
     env_file:
       - .env
+    environment:
+      - BOT_UPDATE_YTDL=true
     restart: unless-stopped

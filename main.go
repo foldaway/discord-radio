@@ -73,7 +73,7 @@ func main() {
 		if isSomethingPlaying {
 			commands.MusicPlayer.Control <- commands.Pause
 		}
-		commands.MusicPlayer.Play(url)
+		commands.MusicPlayer.Play(url, "0.5")
 		time.Sleep(3500 * time.Millisecond)
 		if isSomethingPlaying {
 			commands.MusicPlayer.Control <- commands.Resume

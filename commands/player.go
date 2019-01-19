@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/evalphobia/google-tts-go/googletts"
+
 	"google.golang.org/api/youtube/v3"
 
 	"github.com/bottleneckco/radio-clerk/models"
@@ -37,7 +39,7 @@ var debug = false
 
 // Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go
 
-func (p *Player) Play(url string) {
+func (p *Player) Play(url, volume string) {
 	p.IsPlaying = true
 	args := []string{"-v"}
 	if strings.Contains(url, "youtube.com") {
@@ -54,7 +56,7 @@ func (p *Player) Play(url string) {
 		return
 	}
 	ytdlbuf := bufio.NewReaderSize(ytdlout, 16384)
-	ffmpeg := exec.Command("ffmpeg", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "-af", fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=0.95,volume=%s", os.Getenv("BOT_VOLUME")), "-b:a", "256k", "pipe:1")
+	ffmpeg := exec.Command("ffmpeg", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "-af", fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=0.95,volume=%s", volume), "-b:a", "256k", "pipe:1")
 	ffmpeg.Stdin = ytdlbuf
 	if debug {
 		ffmpeg.Stderr = os.Stderr
@@ -281,7 +283,10 @@ func SafeCheckPlay() {
 	}
 	var song = Queue[0]
 	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
-	MusicPlayer.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID))
+	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Playing %s, uploaded by %s", song.Title, song.ChannelTitle), "en"); err == nil {
+		MusicPlayer.Play(ttsMsgURL, "0.5")
+	}
+	MusicPlayer.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), os.Getenv("BOT_VOLUME"))
 	if len(Queue) > 0 {
 		Queue = Queue[1:]
 	}

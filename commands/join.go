@@ -27,6 +27,6 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 	VoiceConnection = voiceChannel
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s joined '%s'", m.Author.Mention(), channel.Name))
 	url, _ := googletts.GetTTSURL("Hello!", "en")
-	MusicPlayer.Play(url)
+	MusicPlayer.Play(url, "0.5")
 	SafeCheckPlay()
 }

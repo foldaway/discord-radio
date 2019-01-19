@@ -31,6 +31,8 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 	url, _ := googletts.GetTTSURL("Hello! I'll be ready in a moment.", "en")
 	if os.Getenv("BOT_UPDATE_YTDL") == "true" {
 		updateCmd := exec.Command("/usr/bin/curl", "-L", "https://yt-dl.org/downloads/latest/youtube-dl", "-o", "/usr/local/bin/youtube-dl")
+		updateCmd.Stdout = os.Stdout
+		updateCmd.Stderr = os.Stderr
 		updateCmd.Wait()
 	}
 	MusicPlayer.Play(url, "0.5")

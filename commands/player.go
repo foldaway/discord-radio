@@ -250,6 +250,7 @@ func GenerateAutoPlaylistQueueItem() (models.QueueItem, error) {
 		ChannelTitle: chosenListingSnippet.Snippet.ChannelTitle,
 		Author:       "AutoPlaylist",
 		VideoID:      chosenListing.ContentDetails.VideoId,
+		Thumbnail:    chosenListingSnippet.Snippet.Thumbnails.Default.Url,
 	}
 	return data, nil
 }

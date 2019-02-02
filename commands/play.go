@@ -68,6 +68,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 				ChannelTitle: youtubeListing.Snippet.ChannelTitle,
 				Author:       m.Author.Username,
 				VideoID:      youtubeListing.Id,
+				Thumbnail:    youtubeListing.Snippet.Thumbnails.Default.Url,
 			})
 		}
 		SafeCheckPlay()
@@ -114,6 +115,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 					ChannelTitle: chosenItem.Snippet.ChannelTitle,
 					Author:       mm.Author.Username,
 					VideoID:      chosenItem.Id.VideoId,
+					Thumbnail:    chosenItem.Snippet.Thumbnails.Default.Url,
 				})
 				ss.ChannelMessageSendEmbed(mm.ChannelID, &discordgo.MessageEmbed{
 					Author: &discordgo.MessageEmbedAuthor{

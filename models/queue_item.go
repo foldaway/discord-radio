@@ -5,4 +5,5 @@ type QueueItem struct {
 	ChannelTitle string
 	Author       string
 	VideoID      string
+	Thumbnail    string
 }

@@ -31,5 +31,21 @@ func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s skipped **%s**  ⬆️%s   ⏫%s\n", m.Author.Mention(), skippedItem.Title, skippedItem.ChannelTitle, skippedItem.Author))
+	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
+		Author: &discordgo.MessageEmbedAuthor{
+			Name:    "Removed from queue",
+			IconURL: m.Author.AvatarURL("32"),
+		},
+		Title: skippedItem.Title,
+		Thumbnail: &discordgo.MessageEmbedThumbnail{
+			URL: skippedItem.Thumbnail,
+		},
+		URL: fmt.Sprintf("https://www.youtube.com/watch?v=%s", skippedItem.VideoID),
+		Fields: []*discordgo.MessageEmbedField{
+			&discordgo.MessageEmbedField{
+				Name:  "Channel",
+				Value: skippedItem.ChannelTitle,
+			},
+		},
+	})
 }

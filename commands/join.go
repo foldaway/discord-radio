@@ -28,7 +28,7 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	VoiceConnection = voiceChannel
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s joined '%s'", m.Author.Mention(), channel.Name))
-	url, _ := googletts.GetTTSURL("Hello! I'll be ready in a moment.", "en")
+	url, _ := googletts.GetTTSURL("Ready", "en")
 	if os.Getenv("BOT_UPDATE_YTDL") == "true" {
 		updateCmd := exec.Command("/usr/bin/curl", "-L", "https://yt-dl.org/downloads/latest/youtube-dl", "-o", "/usr/local/bin/youtube-dl")
 		updateCmd.Stdout = os.Stdout

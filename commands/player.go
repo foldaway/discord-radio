@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -276,7 +277,8 @@ func SafeCheckPlay() {
 	}
 	var song = Queue[0]
 	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
-	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Playing %s, uploaded by %s", song.Title, song.ChannelTitle), "en"); err == nil {
+	r := regexp.MustCompile("(\\(.+?\\)|\\[.+?\\])")
+	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", r.ReplaceAllString(song.Title, "")), "en"); err == nil {
 		MusicPlayer.Play(ttsMsgURL, "0.5")
 	}
 	MusicPlayer.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), os.Getenv("BOT_VOLUME"))

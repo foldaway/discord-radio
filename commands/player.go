@@ -39,6 +39,11 @@ type Player struct {
 
 func (p *Player) Play(url, volume string) {
 	p.IsPlaying = true
+
+	defer func() {
+		p.IsPlaying = false
+	}()
+
 	args := []string{"-q"}
 	if strings.Contains(url, "youtube.com") {
 		args = append(args, "-f", "bestaudio[abr>=130]")
@@ -97,10 +102,6 @@ func (p *Player) Play(url, volume string) {
 	}
 	defer func() {
 		go dca.Wait()
-	}()
-
-	defer func() {
-		p.IsPlaying = false
 	}()
 
 	// header "buffer"

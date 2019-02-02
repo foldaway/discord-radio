@@ -31,5 +31,5 @@ func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s skipped **%s** `%s` [%s]\n", m.Author.Mention(), skippedItem.Title, skippedItem.ChannelTitle, skippedItem.Author))
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s skipped **%s**  ⬆️%s   ⏫%s\n", m.Author.Mention(), skippedItem.Title, skippedItem.ChannelTitle, skippedItem.Author))
 }

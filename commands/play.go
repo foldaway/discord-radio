@@ -132,7 +132,6 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 						},
 					},
 				})
-				ss.ChannelMessageSend(mm.ChannelID, fmt.Sprintf("%s enqueued:\n`️➕`**%s** `%s`\n", mm.Author.Mention(), chosenItem.Snippet.Title, chosenItem.Snippet.ChannelTitle))
 			} else {
 				ss.ChannelMessageSend(mm.ChannelID, fmt.Sprintf("%s Search cancelled", mm.Author.Mention()))
 			}

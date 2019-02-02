@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/evalphobia/google-tts-go/googletts"
+	"github.com/masatana/go-textdistance"
 
 	"google.golang.org/api/youtube/v3"
 
@@ -220,18 +221,7 @@ func GenerateAutoPlaylistQueueItem() (models.QueueItem, error) {
 	var chosenListingSnippet *youtube.Video
 
 	for {
-		for {
-			chosenListing = listings[rand.Intn(len(listings))]
-			if previousAutoPlaylistListing != nil && previousAutoPlaylistListing.ContentDetails.VideoId != chosenListing.ContentDetails.VideoId {
-				previousAutoPlaylistListing = chosenListing
-				break
-			} else {
-				break
-			}
-		}
-
-		log.Printf("[AP] Chosen v='%s'\n", chosenListing.ContentDetails.VideoId)
-
+		chosenListing = listings[rand.Intn(len(listings))]
 		chosenListingSnippets, err := youtubeService.Videos.List("snippet").Id(chosenListing.ContentDetails.VideoId).Do()
 		if err != nil {
 			return data, err
@@ -240,7 +230,14 @@ func GenerateAutoPlaylistQueueItem() (models.QueueItem, error) {
 			continue
 		}
 		chosenListingSnippet = chosenListingSnippets.Items[0]
-		break
+
+		if previousAutoPlaylistListing != nil && textdistance.LevenshteinDistance(previousAutoPlaylistListing.Snippet.Title, chosenListingSnippet.Snippet.Title) > 20 {
+			previousAutoPlaylistListing = chosenListing
+			previousAutoPlaylistListing.Snippet = &youtube.PlaylistItemSnippet{Title: chosenListingSnippet.Snippet.Title}
+			break
+		} else {
+			break
+		}
 	}
 
 	log.Printf("[AP] Chosen video '%s' by '%s'\n", chosenListingSnippet.Snippet.Title, chosenListingSnippet.Snippet.ChannelTitle)

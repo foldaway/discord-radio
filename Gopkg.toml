@@ -52,3 +52,7 @@
 [[constraint]]
   name = "github.com/evalphobia/google-tts-go"
   version = "0.3.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/masatana/go-textdistance"

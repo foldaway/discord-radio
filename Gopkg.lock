@@ -10,6 +10,14 @@
   version = "v0.18.0"
 
 [[projects]]
+  digest = "1:e47d51dab652d26c3fba6f8cba403f922d02757a82abdc77e90df7948daf296e"
+  name = "github.com/deckarep/golang-set"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cbaa98ba5575e67703b32b4b19f73c91f3c4159e"
+  version = "v1.7.1"
+
+[[projects]]
   digest = "1:614d8d5d31091e830a9fa3f34a89b99ae56809f999cd835f5b7aa896212a0123"
   name = "github.com/evalphobia/google-tts-go"
   packages = ["googletts"]
@@ -32,6 +40,14 @@
   pruneopts = "UT"
   revision = "23d116af351c84513e1946b527c88823e476be13"
   version = "v1.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:4b082a6c0b53a192b9ac9f548bb1bc286a9969f796ba1e2a0ad67be721a65dbe"
+  name = "github.com/masatana/go-textdistance"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "59954f2a9d67847c68659c36d884c4ae9aba9726"
 
 [[projects]]
   branch = "master"
@@ -78,6 +94,7 @@
     "github.com/bwmarrin/discordgo",
     "github.com/evalphobia/google-tts-go/googletts",
     "github.com/joho/godotenv",
+    "github.com/masatana/go-textdistance",
     "google.golang.org/api/googleapi/transport",
     "google.golang.org/api/youtube/v3",
   ]

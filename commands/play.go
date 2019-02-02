@@ -115,6 +115,23 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 					Author:       mm.Author.Username,
 					VideoID:      chosenItem.Id.VideoId,
 				})
+				ss.ChannelMessageSendEmbed(mm.ChannelID, &discordgo.MessageEmbed{
+					Author: &discordgo.MessageEmbedAuthor{
+						Name:    "Added to queue",
+						IconURL: m.Author.AvatarURL("32"),
+					},
+					Title: chosenItem.Snippet.Title,
+					Thumbnail: &discordgo.MessageEmbedThumbnail{
+						URL: chosenItem.Snippet.Thumbnails.Default.Url,
+					},
+					URL: fmt.Sprintf("https://www.youtube.com/watch?v=%s", chosenItem.Id.VideoId),
+					Fields: []*discordgo.MessageEmbedField{
+						&discordgo.MessageEmbedField{
+							Name:  "Channel",
+							Value: chosenItem.Snippet.ChannelTitle,
+						},
+					},
+				})
 				ss.ChannelMessageSend(mm.ChannelID, fmt.Sprintf("%s enqueued:\n`️➕`**%s** `%s`\n", mm.Author.Mention(), chosenItem.Snippet.Title, chosenItem.Snippet.ChannelTitle))
 			} else {
 				ss.ChannelMessageSend(mm.ChannelID, fmt.Sprintf("%s Search cancelled", mm.Author.Mention()))

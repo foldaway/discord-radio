@@ -276,11 +276,12 @@ func SafeCheckPlay() {
 		Queue = append(Queue, queueItem)
 	}
 	var song = Queue[0]
-	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
+	GameUpdateFunc("with myself")
 	r := regexp.MustCompile("(\\(.+?\\)|\\[.+?\\])")
 	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", r.ReplaceAllString(song.Title, "")), "en"); err == nil {
 		MusicPlayer.Play(ttsMsgURL, "0.5")
 	}
+	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
 	MusicPlayer.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), os.Getenv("BOT_VOLUME"))
 	if len(Queue) > 0 {
 		Queue = Queue[1:]

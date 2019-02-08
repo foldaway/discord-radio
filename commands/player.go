@@ -276,7 +276,8 @@ func SafeCheckPlay() {
 	var song = Queue[0]
 	GameUpdateFunc("with myself")
 	r := regexp.MustCompile("(\\(.+?\\)|\\[.+?\\])")
-	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", r.ReplaceAllString(song.Title, "")), "en"); err == nil {
+	anOnly := regexp.MustCompile("[^a-zA-Z0-9\\s]+")
+	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", r.ReplaceAllString(anOnly.ReplaceAllString(song.Title, ""), "")), "en"); err == nil {
 		MusicPlayer.Play(ttsMsgURL, "0.5")
 	}
 	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))

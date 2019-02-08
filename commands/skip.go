@@ -14,6 +14,7 @@ func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing to skip", m.Author.Mention()))
 		return
 	}
+	Mutex.Lock()
 	var skippedItem models.QueueItem
 	if len(m.Content) == 0 {
 		// No args, skip current
@@ -27,10 +28,11 @@ func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 			Queue = append(Queue[:choice-1], Queue[choice:]...)
 		} else {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s invalid choice", m.Author.Mention()))
+			Mutex.Unlock()
 			return
 		}
 	}
-
+	Mutex.Unlock()
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{
 			Name:    "Removed from queue",

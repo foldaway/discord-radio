@@ -2,14 +2,17 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
+	Mutex.Lock()
 	if len(Queue) == 0 {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing in the queue.", m.Author.Mention()))
+		Mutex.Unlock()
 		return
 	}
 	var b strings.Builder
@@ -19,5 +22,7 @@ func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	for index, queueItem := range Queue[1:] {
 		b.WriteString(fmt.Sprintf("`️%d.` **%s**   ⬆️%s   ⏫%s\n", index+2, queueItem.Title, queueItem.ChannelTitle, queueItem.Author))
 	}
+	Mutex.Unlock()
+	log.Println("Off")
 	s.ChannelMessageSend(m.ChannelID, b.String())
 }

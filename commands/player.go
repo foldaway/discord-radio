@@ -271,9 +271,13 @@ func SafeCheckPlay() {
 			log.Printf("[SCP] Error generating auto playlist item: %s\n", err)
 			return
 		}
+		Mutex.Lock()
 		Queue = append(Queue, queueItem)
+		Mutex.Unlock()
 	}
+	Mutex.Lock()
 	var song = Queue[0]
+	Mutex.Unlock()
 	GameUpdateFunc("with myself")
 	r := regexp.MustCompile("(\\(.+?\\)|\\[.+?\\])")
 	anOnly := regexp.MustCompile("[^a-zA-Z0-9\\s]+")
@@ -282,9 +286,11 @@ func SafeCheckPlay() {
 	}
 	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
 	MusicPlayer.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), os.Getenv("BOT_VOLUME"))
+	Mutex.Lock()
 	if len(Queue) > 0 {
 		Queue = Queue[1:]
 	}
+	Mutex.Unlock()
 	if VoiceConnection != nil {
 		go SafeCheckPlay()
 	}

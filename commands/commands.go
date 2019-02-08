@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/bottleneckco/radio-clerk/models"
@@ -23,6 +24,7 @@ var MusicPlayer = &Player{
 	Control: make(chan ControlMessage),
 }
 var GameUpdateFunc func(game string)
+var Mutex = sync.Mutex{}
 
 func init() {
 	godotenv.Load()

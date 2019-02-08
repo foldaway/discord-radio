@@ -62,6 +62,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error occurred: %s", err))
 			return
 		}
+		Mutex.Lock()
 		for _, youtubeListing := range youtubeListings.Items {
 			Queue = append(Queue, models.QueueItem{
 				Title:        youtubeListing.Snippet.Title,
@@ -71,6 +72,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 				Thumbnail:    youtubeListing.Snippet.Thumbnails.Default.Url,
 			})
 		}
+		Mutex.Unlock()
 		SafeCheckPlay()
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s enqueued %d videos`\n", m.Author.Mention(), len(videoIDs)))
 	} else {
@@ -110,6 +112,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 				return
 			} else if err == nil {
 				chosenItem := tempSearchResultsCache[mm.Author.ID][choice-1]
+				Mutex.Lock()
 				Queue = append(Queue, models.QueueItem{
 					Title:        chosenItem.Snippet.Title,
 					ChannelTitle: chosenItem.Snippet.ChannelTitle,
@@ -117,6 +120,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 					VideoID:      chosenItem.Id.VideoId,
 					Thumbnail:    chosenItem.Snippet.Thumbnails.Default.Url,
 				})
+				Mutex.Unlock()
 				ss.ChannelMessageSendEmbed(mm.ChannelID, &discordgo.MessageEmbed{
 					Author: &discordgo.MessageEmbedAuthor{
 						Name:    "Added to queue",

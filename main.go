@@ -86,7 +86,9 @@ func main() {
 			var tempVoiceConn = commands.VoiceConnection
 			commands.VoiceConnection = nil
 
+			commands.Mutex.Lock()
 			commands.Queue = commands.Queue[0:0]
+			commands.Mutex.Unlock()
 			commands.MusicPlayer.Close <- struct{}{}
 			tempVoiceConn.Disconnect()
 		}

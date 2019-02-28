@@ -1,13 +1,9 @@
 FROM golang:1.11-alpine3.8
 
 RUN apk --no-cache add git gcc musl-dev
-RUN go get -u github.com/golang/dep/cmd/dep
 WORKDIR /go/src/github.com/bottleneckco/radio-clerk
 ENV GOPATH /go
 RUN go get -u github.com/bwmarrin/dca/cmd/dca
-COPY Gopkg.toml .
-COPY Gopkg.lock .
-RUN dep ensure -vendor-only
 COPY . .
 RUN go build -a -o app .
 

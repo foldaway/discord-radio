@@ -1,0 +1,14 @@
+module github.com/bottleneckco/radio-clerk
+
+require (
+	github.com/bwmarrin/discordgo v0.18.0
+	github.com/deckarep/golang-set v1.7.1 // indirect
+	github.com/evalphobia/google-tts-go v0.3.0
+	github.com/gorilla/websocket v1.4.0 // indirect
+	github.com/joho/godotenv v1.3.0
+	github.com/masatana/go-textdistance v0.0.0-20171214133840-59954f2a9d67
+	github.com/stretchr/testify v1.3.0 // indirect
+	golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b // indirect
+	golang.org/x/net v0.0.0-20180911220305-26e67e76b6c3 // indirect
+	google.golang.org/api v0.0.0-20180916000451-19ff8768a5c0
+)

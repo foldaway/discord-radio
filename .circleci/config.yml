@@ -2,13 +2,15 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.10.4
+      - image: circleci/golang:1.12
     working_directory: /go/src/github.com/bottleneckco/radio-clerk
+    environment:
+      GO111MODULE: 'on'
     steps:
       - checkout
 
       # specify any bash command here prefixed with `run: `
-      - run: dep ensure -vendor-only
+      - run: go mod download
       - run: go build -a -o radio-clerk-linux64 .
       - run: env GOOS=linux GOARCH=386 go build -a -o radio-clerk-linux32 .
       - run: env GOOS=windows GOARCH=386 go build -a -o radio-clerk-win32.exe .
@@ -20,7 +22,7 @@ jobs:
             - radio-clerk-*
   deploy:
     docker:
-        - image: circleci/golang:1.10.4
+        - image: circleci/golang:1.12
     working_directory: /tmp
     steps:
       - attach_workspace:

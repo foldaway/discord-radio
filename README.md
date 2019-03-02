@@ -7,8 +7,8 @@ Discord music bot, written in Golang
 - [dca](https://github.com/bwmarrin/dca/tree/master/cmd/dca)
 
 ### Development
-1. Clone into $GOPATH/src/github.com/bottleneckco/radio-clerk
-2. Run `$ dep ensure`
+1. Clone
+2. Run `$ go mod download`
 
 ### Running
 `$ go run main.go`

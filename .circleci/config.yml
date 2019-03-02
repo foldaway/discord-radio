@@ -12,8 +12,8 @@ jobs:
       # specify any bash command here prefixed with `run: `
       - run: go mod download
       - run: go build -a -o radio-clerk-linux64 .
-      - run: env GOOS=linux GOARCH=386 go build -a -o radio-clerk-linux32 .
-      - run: env GOOS=windows GOARCH=386 go build -a -o radio-clerk-win32.exe .
+      # - run: env GOOS=linux GOARCH=386 go build -a -o radio-clerk-linux32 .
+      # - run: env GOOS=windows GOARCH=386 go build -a -o radio-clerk-win32.exe .
       - run: env GOOS=windows GOARCH=amd64 go build -a -o radio-clerk-win64.exe .
       - run: env GOOS=darwin GOARCH=amd64 go build -a -o radio-clerk-darwin .
       - persist_to_workspace:

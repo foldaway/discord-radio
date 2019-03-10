@@ -50,7 +50,7 @@ func (p *Player) Play(url, volume string) {
 
 	args := []string{"-q"}
 	if strings.Contains(url, "youtube.com") {
-		args = append(args, "-f", "bestaudio[abr>=130]")
+		args = append(args, "-f", "bestaudio[abr>=130],best")
 	}
 	args = append(args, "-o", "-", url)
 	ytdl := exec.Command("youtube-dl", args...)

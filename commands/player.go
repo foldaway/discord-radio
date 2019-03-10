@@ -40,9 +40,11 @@ type Player struct {
 // Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go
 
 func (p *Player) Play(url, volume string) {
+	log.Println("[PLAYER] IsPlaying=true")
 	p.IsPlaying = true
 
 	defer func() {
+		log.Println("[PLAYER] IsPlaying=false")
 		p.IsPlaying = false
 	}()
 
@@ -281,9 +283,11 @@ func SafeCheckPlay() {
 	GameUpdateFunc("with myself")
 
 	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", sanitiseSongTitle(song.Title)), "en"); err == nil {
+		log.Println("[PLAYER] Announcing upcoming song title")
 		MusicPlayer.Play(ttsMsgURL, "0.5")
 	}
 	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
+	log.Println("[PLAYER] Playing the actual song data")
 	MusicPlayer.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), os.Getenv("BOT_VOLUME"))
 	Mutex.Lock()
 	if len(Queue) > 0 {

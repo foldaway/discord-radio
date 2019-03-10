@@ -10,11 +10,11 @@ import (
 )
 
 func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
+	Mutex.Lock()
 	if len(Queue) == 0 || !MusicPlayer.IsPlaying {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing to skip", m.Author.Mention()))
 		return
 	}
-	Mutex.Lock()
 	var skippedItem models.QueueItem
 	if len(m.Content) == 0 {
 		// No args, skip current

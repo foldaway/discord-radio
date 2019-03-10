@@ -78,6 +78,8 @@ func main() {
 		time.Sleep(3500 * time.Millisecond)
 		if isSomethingPlaying {
 			commands.MusicPlayer.Control <- commands.Resume
+			log.Println("[MAIN] Patching MusicPlayer IsPlaying=true")
+			commands.MusicPlayer.IsPlaying = true
 		}
 
 		if len(util.GetUsersInVoiceChannel(s, commands.VoiceConnection.ChannelID)) == 1 {

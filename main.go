@@ -62,24 +62,26 @@ func main() {
 			return
 		}
 		userVoiceState, err := util.FindUserVoiceState(s, vsu.UserID)
-		if err != nil || channel.ID != userVoiceState.ChannelID { // User dc all voice || User change voice chan
+		if userVoiceState == nil || err != nil || vsu.ChannelID == "" {
 			// User disconnected from all voice channels
 			ttsMsg = fmt.Sprintf("Goodbye, %s", guildMember.Nick)
-		} else { // User joined this channel
+		} else if channel.ID == userVoiceState.ChannelID && !userVoiceState.SelfMute && !userVoiceState.SelfDeaf { // User joined this channel
 			ttsMsg = fmt.Sprintf("Welcome, %s", guildMember.Nick)
 		}
-		url, _ := googletts.GetTTSURL(ttsMsg, "en")
-		var isSomethingPlaying = commands.MusicPlayer.IsPlaying
-		if isSomethingPlaying {
-			commands.MusicPlayer.Control <- commands.Pause
-		}
-		time.Sleep(2000 * time.Millisecond)
-		commands.MusicPlayer.Play(url, "0.5")
-		time.Sleep(3500 * time.Millisecond)
-		if isSomethingPlaying {
-			commands.MusicPlayer.Control <- commands.Resume
-			log.Println("[MAIN] Patching MusicPlayer IsPlaying=true")
-			commands.MusicPlayer.IsPlaying = true
+		if len(ttsMsg) > 0 {
+			url, _ := googletts.GetTTSURL(ttsMsg, "en")
+			var isSomethingPlaying = commands.MusicPlayer.IsPlaying
+			if isSomethingPlaying {
+				commands.MusicPlayer.Control <- commands.Pause
+			}
+			time.Sleep(2000 * time.Millisecond)
+			commands.MusicPlayer.Play(url, "0.5")
+			time.Sleep(3500 * time.Millisecond)
+			if isSomethingPlaying {
+				commands.MusicPlayer.Control <- commands.Resume
+				log.Println("[MAIN] Patching MusicPlayer IsPlaying=true")
+				commands.MusicPlayer.IsPlaying = true
+			}
 		}
 
 		if len(util.GetUsersInVoiceChannel(s, commands.VoiceConnection.ChannelID)) == 1 {

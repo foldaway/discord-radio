@@ -40,6 +40,7 @@ type Player struct {
 // Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go
 
 func (p *Player) Play(url, volume string) {
+	log.Printf("[PLAYER] Playing URL '%s'\n", url)
 	log.Println("[PLAYER] IsPlaying=true")
 	p.IsPlaying = true
 

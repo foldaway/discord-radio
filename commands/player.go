@@ -279,9 +279,8 @@ func SafeCheckPlay() {
 	var song = Queue[0]
 	Mutex.Unlock()
 	GameUpdateFunc("with myself")
-	r := regexp.MustCompile("(\\(.+?\\)|\\[.+?\\])")
-	anOnly := regexp.MustCompile("[^a-zA-Z0-9\\s]+")
-	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", r.ReplaceAllString(anOnly.ReplaceAllString(song.Title, ""), "")), "en"); err == nil {
+
+	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", sanitiseSongTitle(song.Title)), "en"); err == nil {
 		MusicPlayer.Play(ttsMsgURL, "0.5")
 	}
 	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
@@ -294,4 +293,11 @@ func SafeCheckPlay() {
 	if VoiceConnection != nil {
 		go SafeCheckPlay()
 	}
+}
+
+func sanitiseSongTitle(title string) string {
+	parenthesisRegex := regexp.MustCompile(`(\(.+?\)|\[.+?\])`)
+	alphabetNumberOnly := regexp.MustCompile(`[^a-zA-Z0-9\s&]+`)
+	bannedWordsRegex := regexp.MustCompile(`(official|music video|special video|lyric video)`)
+	return alphabetNumberOnly.ReplaceAllString(bannedWordsRegex.ReplaceAllString(parenthesisRegex.ReplaceAllString(title, ""), ""), "")
 }

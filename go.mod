@@ -1,4 +1,4 @@
-module github.com/bottleneckco/radio-clerk
+module github.com/bottleneckco/discord-radio
 
 require (
 	github.com/bwmarrin/discordgo v0.18.0

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/bottleneckco/radio-clerk/models"
+	"github.com/bottleneckco/discord-radio/models"
 
 	"github.com/bwmarrin/discordgo"
 )

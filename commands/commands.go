@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bottleneckco/radio-clerk/models"
+	"github.com/bottleneckco/discord-radio/models"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"google.golang.org/api/googleapi/transport"

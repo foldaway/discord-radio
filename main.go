@@ -8,8 +8,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/bottleneckco/radio-clerk/commands"
-	"github.com/bottleneckco/radio-clerk/util"
+	"github.com/bottleneckco/discord-radio/commands"
+	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bwmarrin/discordgo"
 	"github.com/evalphobia/google-tts-go/googletts"
 	"github.com/joho/godotenv"

@@ -19,7 +19,7 @@ import (
 
 	"google.golang.org/api/youtube/v3"
 
-	"github.com/bottleneckco/radio-clerk/models"
+	"github.com/bottleneckco/discord-radio/models"
 )
 
 type ControlMessage int

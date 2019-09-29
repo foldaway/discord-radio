@@ -1,5 +1,5 @@
-# radio-clerk
-[![CircleCI](https://circleci.com/gh/bottleneckco/radio-clerk/tree/master.svg?style=svg)](https://circleci.com/gh/bottleneckco/radio-clerk/tree/master)
+# discord-radio
+[![CircleCI](https://circleci.com/gh/bottleneckco/discord-radio/tree/master.svg?style=svg)](https://circleci.com/gh/bottleneckco/discord-radio/tree/master)
 Discord music bot, written in Golang
 
 ### Requirements

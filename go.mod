@@ -11,3 +11,5 @@ require (
 	golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b // indirect
 	google.golang.org/api v0.1.0
 )
+
+go 1.13

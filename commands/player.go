@@ -269,7 +269,6 @@ func SafeCheckPlay(guildSession *GuildSession) {
 		}
 		guildSession.Mutex.Lock()
 		guildSession.Queue = append(guildSession.Queue, queueItem)
-		log.Printf("SCP %+v\n", GuildSessionMap)
 		guildSession.Mutex.Unlock()
 	}
 	guildSession.Mutex.Lock()

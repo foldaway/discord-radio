@@ -7,10 +7,11 @@ import (
 )
 
 func pause(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if !MusicPlayer.IsPlaying {
+	guildSession := safeGetGuildSession(m.GuildID)
+	if !guildSession.MusicPlayer.IsPlaying {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing to pause", m.Author.Mention()))
 		return
 	}
-	MusicPlayer.Control <- Pause
+	guildSession.MusicPlayer.Control <- Pause
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s paused", m.Author.Mention()))
 }

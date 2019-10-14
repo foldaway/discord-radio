@@ -10,29 +10,30 @@ import (
 )
 
 func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
-	Mutex.Lock()
-	if len(Queue) == 0 || !MusicPlayer.IsPlaying {
+	guildSession := safeGetGuildSession(m.GuildID)
+	guildSession.Mutex.Lock()
+	if len(guildSession.Queue) == 0 || !guildSession.MusicPlayer.IsPlaying {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing to skip", m.Author.Mention()))
 		return
 	}
 	var skippedItem models.QueueItem
 	if len(m.Content) == 0 {
 		// No args, skip current
-		skippedItem = Queue[0]
+		skippedItem = guildSession.Queue[0]
 		// Queue = append(Queue[:0], Queue[1:]...)
-		MusicPlayer.Control <- Skip
+		guildSession.MusicPlayer.Control <- Skip
 	} else {
 		choice, err := strconv.ParseInt(m.Content, 10, 64)
-		if err == nil && (choice-1 >= 0 && choice-1 < int64(len(Queue))) {
-			skippedItem = Queue[choice-1]
-			Queue = append(Queue[:choice-1], Queue[choice:]...)
+		if err == nil && (choice-1 >= 0 && choice-1 < int64(len(guildSession.Queue))) {
+			skippedItem = guildSession.Queue[choice-1]
+			guildSession.Queue = append(guildSession.Queue[:choice-1], guildSession.Queue[choice:]...)
 		} else {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s invalid choice", m.Author.Mention()))
-			Mutex.Unlock()
+			guildSession.Mutex.Unlock()
 			return
 		}
 	}
-	Mutex.Unlock()
+	guildSession.Mutex.Unlock()
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{
 			Name:    "Removed from queue",

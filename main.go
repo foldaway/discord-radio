@@ -41,15 +41,16 @@ func main() {
 	})
 
 	dg.AddHandler(func(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
-		if commands.VoiceConnection == nil {
+		guildSession, ok := commands.GuildSessionMap[vsu.GuildID]
+		if !ok || guildSession.VoiceConnection == nil {
 			return
 		}
-		channel, err := s.Channel(commands.VoiceConnection.ChannelID)
+		channel, err := s.Channel(guildSession.VoiceConnection.ChannelID)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		if channel.ID != commands.VoiceConnection.ChannelID {
+		if channel.ID != guildSession.VoiceConnection.ChannelID {
 			// Not my voice channel
 			return
 		}
@@ -69,29 +70,29 @@ func main() {
 		}
 		if len(ttsMsg) > 0 {
 			url, _ := googletts.GetTTSURL(ttsMsg, "en")
-			var isSomethingPlaying = commands.MusicPlayer.IsPlaying
+			var isSomethingPlaying = guildSession.MusicPlayer.IsPlaying
 			if isSomethingPlaying {
-				commands.MusicPlayer.Control <- commands.Pause
+				guildSession.MusicPlayer.Control <- commands.Pause
 			}
-			commands.MusicPlayer.Play(url, "0.5")
+			guildSession.Play(url, "0.5")
 			if isSomethingPlaying {
-				commands.MusicPlayer.Control <- commands.Resume
+				guildSession.MusicPlayer.Control <- commands.Resume
 				log.Println("[MAIN] Patching MusicPlayer IsPlaying=true")
-				commands.MusicPlayer.IsPlaying = true
+				guildSession.MusicPlayer.IsPlaying = true
 			}
 		}
 
-		if len(util.GetUsersInVoiceChannel(s, commands.VoiceConnection.ChannelID)) == 1 {
+		if len(util.GetUsersInVoiceChannel(s, guildSession.VoiceConnection.ChannelID)) == 1 {
 			// Only bot left
 			log.Println("Leaving, only me left in voice channel.")
 			s.UpdateStatus(1, "")
-			var tempVoiceConn = commands.VoiceConnection
-			commands.VoiceConnection = nil
+			var tempVoiceConn = guildSession.VoiceConnection
+			guildSession.VoiceConnection = nil
 
-			commands.Mutex.Lock()
-			commands.Queue = commands.Queue[0:0]
-			commands.Mutex.Unlock()
-			commands.MusicPlayer.Close <- struct{}{}
+			guildSession.Mutex.Lock()
+			guildSession.Queue = guildSession.Queue[0:0]
+			guildSession.Mutex.Unlock()
+			guildSession.MusicPlayer.Close <- struct{}{}
 			tempVoiceConn.Disconnect()
 		}
 	})
@@ -111,8 +112,10 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
-	if commands.VoiceConnection != nil {
-		commands.VoiceConnection.Disconnect()
+	for _, guildSession := range commands.GuildSessionMap {
+		if guildSession.VoiceConnection != nil {
+			guildSession.VoiceConnection.Disconnect()
+		}
 	}
 
 	// Cleanly close down the Discord session.

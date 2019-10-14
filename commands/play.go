@@ -18,7 +18,8 @@ import (
 var tempSearchResultsCache = make(map[string][]*youtube.SearchResult)
 
 func play(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if VoiceConnection == nil {
+	guildSession := safeGetGuildSession(m.GuildID)
+	if guildSession.VoiceConnection == nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s I am not in any voice channel", m.Author.Mention()))
 		return
 	}
@@ -62,9 +63,9 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error occurred: %s", err))
 			return
 		}
-		Mutex.Lock()
+		guildSession.Mutex.Lock()
 		for _, youtubeListing := range youtubeListings.Items {
-			Queue = append(Queue, models.QueueItem{
+			guildSession.Queue = append(guildSession.Queue, models.QueueItem{
 				Title:        youtubeListing.Snippet.Title,
 				ChannelTitle: youtubeListing.Snippet.ChannelTitle,
 				Author:       m.Author.Username,
@@ -72,8 +73,8 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 				Thumbnail:    youtubeListing.Snippet.Thumbnails.Default.Url,
 			})
 		}
-		Mutex.Unlock()
-		SafeCheckPlay()
+		guildSession.Mutex.Unlock()
+		SafeCheckPlay(guildSession)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s enqueued %d videos`\n", m.Author.Mention(), len(videoIDs)))
 	} else {
 		maxResults, _ := strconv.ParseInt(os.Getenv("BOT_NUM_RESULTS"), 10, 64)
@@ -112,15 +113,15 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 				return
 			} else if err == nil {
 				chosenItem := tempSearchResultsCache[mm.Author.ID][choice-1]
-				Mutex.Lock()
-				Queue = append(Queue, models.QueueItem{
+				guildSession.Mutex.Lock()
+				guildSession.Queue = append(guildSession.Queue, models.QueueItem{
 					Title:        chosenItem.Snippet.Title,
 					ChannelTitle: chosenItem.Snippet.ChannelTitle,
 					Author:       mm.Author.Username,
 					VideoID:      chosenItem.Id.VideoId,
 					Thumbnail:    chosenItem.Snippet.Thumbnails.Default.Url,
 				})
-				Mutex.Unlock()
+				guildSession.Mutex.Unlock()
 				ss.ChannelMessageSendEmbed(mm.ChannelID, &discordgo.MessageEmbed{
 					Author: &discordgo.MessageEmbedAuthor{
 						Name:    "Added to queue",
@@ -143,7 +144,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			delete(tempSearchResultsCache, mm.Author.ID)
 			awaitFuncRemove()
-			SafeCheckPlay()
+			SafeCheckPlay(guildSession)
 		})
 	}
 

@@ -83,6 +83,7 @@ func init() {
 	CommandsMap["pause"] = pause
 	CommandsMap["resume"] = resume
 	CommandsMap["help"] = help
+	CommandsMap["leave"] = leave
 }
 
 func deleteMessageDelayed(sess *discordgo.Session, msg *discordgo.Message) {

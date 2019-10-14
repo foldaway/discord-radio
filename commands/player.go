@@ -30,23 +30,16 @@ const (
 	Resume
 )
 
-type Player struct {
-	StartTime time.Time
-	IsPlaying bool
-	Close     chan struct{}
-	Control   chan ControlMessage
-}
-
 // Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go
 
-func (p *Player) Play(url, volume string) {
+func (guildSession *GuildSession) Play(url, volume string) {
 	log.Printf("[PLAYER] Playing URL '%s'\n", url)
 	log.Println("[PLAYER] IsPlaying=true")
-	p.IsPlaying = true
+	guildSession.MusicPlayer.IsPlaying = true
 
 	defer func() {
 		log.Println("[PLAYER] IsPlaying=false")
-		p.IsPlaying = false
+		guildSession.MusicPlayer.IsPlaying = false
 	}()
 
 	args := []string{"-q"}
@@ -113,29 +106,29 @@ func (p *Player) Play(url, volume string) {
 	var opuslen int16
 
 	// Send "speaking" packet over the voice websocket
-	if VoiceConnection != nil {
-		VoiceConnection.Speaking(true)
+	if guildSession.VoiceConnection != nil {
+		guildSession.VoiceConnection.Speaking(true)
 	}
 
 	// Send not "speaking" packet over the websocket when we finish
 	defer func() {
-		if VoiceConnection != nil {
-			VoiceConnection.Speaking(false)
+		if guildSession.VoiceConnection != nil {
+			guildSession.VoiceConnection.Speaking(false)
 		}
 	}()
 
-	p.StartTime = time.Now()
+	guildSession.MusicPlayer.StartTime = time.Now()
 
 	for {
 		select {
-		case <-p.Close:
+		case <-guildSession.MusicPlayer.Close:
 			log.Println("play() exited due to close channel.")
 			return
 		default:
 		}
 
 		select {
-		case ctl := <-p.Control:
+		case ctl := <-guildSession.MusicPlayer.Control:
 			switch ctl {
 			case Skip:
 				log.Println("received skip")
@@ -144,7 +137,7 @@ func (p *Player) Play(url, volume string) {
 				done := false
 				for {
 
-					ctl, ok := <-p.Control
+					ctl, ok := <-guildSession.MusicPlayer.Control
 					if !ok {
 						return
 					}
@@ -187,8 +180,8 @@ func (p *Player) Play(url, volume string) {
 		}
 
 		// Send received PCM to the sendPCM channel
-		if VoiceConnection != nil {
-			VoiceConnection.OpusSend <- opus
+		if guildSession.VoiceConnection != nil {
+			guildSession.VoiceConnection.OpusSend <- opus
 		} else {
 			log.Println("[PLAYER] VoiceConnection nil, terminating OPUS transmission")
 			return
@@ -196,7 +189,7 @@ func (p *Player) Play(url, volume string) {
 	}
 }
 
-func GenerateAutoPlaylistQueueItem() (models.QueueItem, error) {
+func GenerateAutoPlaylistQueueItem(guildSession *GuildSession) (models.QueueItem, error) {
 	var data models.QueueItem
 	parsedURI, err := url.ParseRequestURI(os.Getenv("BOT_AUTO_PLAYLIST"))
 	if err != nil {
@@ -234,9 +227,9 @@ func GenerateAutoPlaylistQueueItem() (models.QueueItem, error) {
 		}
 		chosenListingSnippet = chosenListingSnippets.Items[0]
 
-		if previousAutoPlaylistListing != nil && textdistance.LevenshteinDistance(previousAutoPlaylistListing.Snippet.Title, chosenListingSnippet.Snippet.Title) > 20 {
-			previousAutoPlaylistListing = chosenListing
-			previousAutoPlaylistListing.Snippet = &youtube.PlaylistItemSnippet{Title: chosenListingSnippet.Snippet.Title}
+		if guildSession.previousAutoPlaylistListing != nil && textdistance.LevenshteinDistance(guildSession.previousAutoPlaylistListing.Snippet.Title, chosenListingSnippet.Snippet.Title) > 20 {
+			guildSession.previousAutoPlaylistListing = chosenListing
+			guildSession.previousAutoPlaylistListing.Snippet = &youtube.PlaylistItemSnippet{Title: chosenListingSnippet.Snippet.Title}
 			break
 		} else {
 			break
@@ -255,48 +248,46 @@ func GenerateAutoPlaylistQueueItem() (models.QueueItem, error) {
 	return data, nil
 }
 
-func SafeCheckPlay() {
-	if VoiceConnection == nil {
+func SafeCheckPlay(guildSession *GuildSession) {
+	if guildSession.VoiceConnection == nil {
 		log.Println("[SCP] no voice connection")
 		return
 	}
-	if MusicPlayer.IsPlaying {
+	if guildSession.MusicPlayer.IsPlaying {
 		log.Println("[SCP] currently playing something!")
 		return
 	}
-	if len(Queue) == 0 && len(os.Getenv("BOT_AUTO_PLAYLIST")) == 0 {
+	if len(guildSession.Queue) == 0 && len(os.Getenv("BOT_AUTO_PLAYLIST")) == 0 {
 		log.Println("[SCP] no items in queue")
 		return
-	} else if len(Queue) == 0 {
+	} else if len(guildSession.Queue) == 0 {
 		log.Println("[SCP] Getting from auto playlist")
-		queueItem, err := GenerateAutoPlaylistQueueItem()
+		queueItem, err := GenerateAutoPlaylistQueueItem(guildSession)
 		if err != nil {
 			log.Printf("[SCP] Error generating auto playlist item: %s\n", err)
 			return
 		}
-		Mutex.Lock()
-		Queue = append(Queue, queueItem)
-		Mutex.Unlock()
+		guildSession.Mutex.Lock()
+		guildSession.Queue = append(guildSession.Queue, queueItem)
+		guildSession.Mutex.Unlock()
 	}
-	Mutex.Lock()
-	var song = Queue[0]
-	Mutex.Unlock()
-	GameUpdateFunc("with myself")
+	guildSession.Mutex.Lock()
+	var song = guildSession.Queue[0]
+	guildSession.Mutex.Unlock()
 
 	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", sanitiseSongTitle(song.Title)), "en"); err == nil {
 		log.Println("[PLAYER] Announcing upcoming song title")
-		MusicPlayer.Play(ttsMsgURL, "0.5")
+		guildSession.Play(ttsMsgURL, "0.5")
 	}
-	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
 	log.Println("[PLAYER] Playing the actual song data")
-	MusicPlayer.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), os.Getenv("BOT_VOLUME"))
-	Mutex.Lock()
-	if len(Queue) > 0 {
-		Queue = Queue[1:]
+	guildSession.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), os.Getenv("BOT_VOLUME"))
+	guildSession.Mutex.Lock()
+	if len(guildSession.Queue) > 0 {
+		guildSession.Queue = guildSession.Queue[1:]
 	}
-	Mutex.Unlock()
-	if VoiceConnection != nil {
-		go SafeCheckPlay()
+	guildSession.Mutex.Unlock()
+	if guildSession.VoiceConnection != nil {
+		go SafeCheckPlay(guildSession)
 	}
 }
 

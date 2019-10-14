@@ -14,17 +14,51 @@ import (
 	youtube "google.golang.org/api/youtube/v3"
 )
 
+// CommandsMap a map of all the command handlers
 var CommandsMap = make(map[string]func(*discordgo.Session, *discordgo.MessageCreate))
-var Queue []models.QueueItem // current item = index 0
-var VoiceConnection *discordgo.VoiceConnection
-var youtubeService *youtube.Service
-var previousAutoPlaylistListing *youtube.PlaylistItem
-var MusicPlayer = &Player{
-	Close:   make(chan struct{}),
-	Control: make(chan ControlMessage),
+
+// MusicPlayer represents a music player
+type MusicPlayer struct {
+	StartTime time.Time
+	IsPlaying bool
+	Close     chan struct{}
+	Control   chan ControlMessage
 }
-var GameUpdateFunc func(game string)
-var Mutex = sync.Mutex{}
+
+// GuildSession represents a guild voice session
+type GuildSession struct {
+	GuildID                     string
+	Mutex                       sync.Mutex
+	Queue                       []models.QueueItem // current item = index 0
+	VoiceConnection             *discordgo.VoiceConnection
+	previousAutoPlaylistListing *youtube.PlaylistItem
+	MusicPlayer                 MusicPlayer
+}
+
+func newGuildSession(guildID string) GuildSession {
+	return GuildSession{
+		GuildID: guildID,
+		Mutex:   sync.Mutex{},
+		MusicPlayer: MusicPlayer{
+			Close:   make(chan struct{}),
+			Control: make(chan ControlMessage),
+		},
+	}
+}
+
+// GuildSessionMap a map of all the guild sessions
+var GuildSessionMap = make(map[string]*GuildSession)
+
+func safeGetGuildSession(guildID string) *GuildSession {
+	if session, ok := GuildSessionMap[guildID]; ok {
+		return session
+	}
+	session := newGuildSession(guildID)
+	GuildSessionMap[guildID] = &session
+	return &session
+}
+
+var youtubeService *youtube.Service
 
 func init() {
 	godotenv.Load()
@@ -48,6 +82,7 @@ func init() {
 	CommandsMap["pause"] = pause
 	CommandsMap["resume"] = resume
 	CommandsMap["help"] = help
+	CommandsMap["leave"] = leave
 }
 
 func deleteMessageDelayed(sess *discordgo.Session, msg *discordgo.Message) {

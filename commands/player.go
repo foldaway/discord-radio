@@ -274,13 +274,11 @@ func SafeCheckPlay(guildSession *GuildSession) {
 	guildSession.Mutex.Lock()
 	var song = guildSession.Queue[0]
 	guildSession.Mutex.Unlock()
-	GameUpdateFunc("with myself")
 
 	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", sanitiseSongTitle(song.Title)), "en"); err == nil {
 		log.Println("[PLAYER] Announcing upcoming song title")
 		guildSession.Play(ttsMsgURL, "0.5")
 	}
-	GameUpdateFunc(fmt.Sprintf("%s (%s)", song.Title, song.ChannelTitle))
 	log.Println("[PLAYER] Playing the actual song data")
 	guildSession.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), os.Getenv("BOT_VOLUME"))
 	guildSession.Mutex.Lock()

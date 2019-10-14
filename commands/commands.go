@@ -27,6 +27,7 @@ type MusicPlayer struct {
 
 // GuildSession represents a guild voice session
 type GuildSession struct {
+	GuildID                     string
 	Mutex                       sync.Mutex
 	Queue                       []models.QueueItem // current item = index 0
 	VoiceConnection             *discordgo.VoiceConnection
@@ -34,9 +35,10 @@ type GuildSession struct {
 	MusicPlayer                 MusicPlayer
 }
 
-func newGuildSession() GuildSession {
+func newGuildSession(guildID string) GuildSession {
 	return GuildSession{
-		Mutex: sync.Mutex{},
+		GuildID: guildID,
+		Mutex:   sync.Mutex{},
 		MusicPlayer: MusicPlayer{
 			Close:   make(chan struct{}),
 			Control: make(chan ControlMessage),
@@ -51,13 +53,10 @@ func safeGetGuildSession(guildID string) *GuildSession {
 	if session, ok := GuildSessionMap[guildID]; ok {
 		return session
 	}
-	session := newGuildSession()
+	session := newGuildSession(guildID)
 	GuildSessionMap[guildID] = &session
 	return &session
 }
-
-// GameUpdateFunc call to update the bot's current game
-var GameUpdateFunc func(game string)
 
 var youtubeService *youtube.Service
 

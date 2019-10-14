@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/bottleneckco/discord-radio/commands"
 	"github.com/bottleneckco/discord-radio/util"
@@ -21,6 +22,37 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	gameStatusQuitChannel := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case <-gameStatusQuitChannel:
+				return
+			default:
+				// Update music status
+				if len(commands.GuildSessionMap) == 0 {
+					dg.UpdateStatus(1, "")
+				} else {
+					var sb strings.Builder
+					for _, guildSession := range commands.GuildSessionMap {
+						if len(guildSession.Queue) > 0 && guildSession.MusicPlayer.IsPlaying {
+							guild, err := dg.Guild(guildSession.GuildID)
+							if err != nil {
+								log.Println(err)
+								continue
+							}
+							song := guildSession.Queue[0]
+							sb.WriteString(fmt.Sprintf("[%s] %s (%s) | ", guild.Name, song.Title, song.ChannelTitle))
+						}
+					}
+					dg.UpdateStatus(0, sb.String())
+				}
+			}
+			time.Sleep(5 * time.Second)
+		}
+	}()
 
 	dg.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Ignore all messages created by the bot itself
@@ -82,7 +114,7 @@ func main() {
 			}
 		}
 
-		if len(util.GetUsersInVoiceChannel(s, guildSession.VoiceConnection.ChannelID)) == 1 {
+		if len(util.GetUsersInVoiceChannel(s, guildSession.VoiceConnection.ChannelID)) == 9 {
 			// Only bot left
 			log.Println("Leaving, only me left in voice channel.")
 			s.UpdateStatus(1, "")
@@ -96,10 +128,6 @@ func main() {
 			tempVoiceConn.Disconnect()
 		}
 	})
-
-	commands.GameUpdateFunc = func(game string) {
-		dg.UpdateStatus(0, game)
-	}
 
 	err = dg.Open()
 	if err != nil {
@@ -117,6 +145,8 @@ func main() {
 			guildSession.VoiceConnection.Disconnect()
 		}
 	}
+
+	gameStatusQuitChannel <- true
 
 	// Cleanly close down the Discord session.
 	dg.Close()

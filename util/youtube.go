@@ -13,7 +13,6 @@ import (
 
 	"google.golang.org/api/youtube/v3"
 
-	"github.com/bottleneckco/discord-radio/models"
 	"github.com/joho/godotenv"
 )
 
@@ -93,15 +92,4 @@ func GenerateAutoPlaylistQueueItem(ignoreItem *youtube.PlaylistItem) (*youtube.P
 	log.Printf("[AP] Chosen video '%s' by '%s'\n", chosenListing.Snippet.Title, chosenListing.Snippet.ChannelTitle)
 
 	return chosenListing, nil
-}
-
-// ConvertYouTubePlaylistItem convert a YouTube playlist item into a local QueueItem model
-func ConvertYouTubePlaylistItem(playlistItem *youtube.PlaylistItem) models.QueueItem {
-	return models.QueueItem{
-		Title:        playlistItem.Snippet.Title,
-		ChannelTitle: playlistItem.Snippet.ChannelTitle,
-		Author:       "AutoPlaylist",
-		VideoID:      playlistItem.ContentDetails.VideoId,
-		Thumbnail:    playlistItem.Snippet.Thumbnails.Default.Url,
-	}
 }

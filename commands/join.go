@@ -39,5 +39,5 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 		updateCmd.Run()
 	}
 	guildSession.PlayURL(url, 0.5)
-	SafeCheckPlay(guildSession)
+	go guildSession.Loop()
 }

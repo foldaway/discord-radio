@@ -9,11 +9,9 @@ import (
 )
 
 func help(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guildSession := safeGetGuildSession(m.GuildID)
 	var b strings.Builder
 	for k := range CommandsMap {
 		b.WriteString(fmt.Sprintf("%s%s\n", os.Getenv("BOT_COMMAND_PREFIX"), k))
 	}
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s commands list:\n%s", m.Author.Mention(), b.String()))
-	SafeCheckPlay(guildSession)
 }

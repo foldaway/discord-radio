@@ -74,7 +74,6 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 			})
 		}
 		guildSession.Mutex.Unlock()
-		SafeCheckPlay(guildSession)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s enqueued %d videos`\n", m.Author.Mention(), len(videoIDs)))
 	} else {
 		maxResults, _ := strconv.ParseInt(os.Getenv("BOT_NUM_RESULTS"), 10, 64)
@@ -144,7 +143,6 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			delete(tempSearchResultsCache, mm.Author.ID)
 			awaitFuncRemove()
-			SafeCheckPlay(guildSession)
 		})
 	}
 

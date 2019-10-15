@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bottleneckco/discord-radio/commands"
+	"github.com/bottleneckco/discord-radio/models"
 	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bwmarrin/discordgo"
 	"github.com/evalphobia/google-tts-go/googletts"
@@ -104,11 +105,11 @@ func main() {
 			url, _ := googletts.GetTTSURL(ttsMsg, "en")
 			var isSomethingPlaying = guildSession.MusicPlayer.IsPlaying
 			if isSomethingPlaying {
-				guildSession.MusicPlayer.Control <- commands.Pause
+				guildSession.MusicPlayer.Control <- models.MusicPlayerActionPause
 			}
 			guildSession.PlayURL(url, 0.5)
 			if isSomethingPlaying {
-				guildSession.MusicPlayer.Control <- commands.Resume
+				guildSession.MusicPlayer.Control <- models.MusicPlayerActionResume
 				log.Println("[MAIN] Patching MusicPlayer IsPlaying=true")
 				guildSession.MusicPlayer.IsPlaying = true
 			}

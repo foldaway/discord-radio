@@ -1,16 +1,11 @@
 package commands
 
 import (
-	"bufio"
-	"encoding/binary"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
-	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"time"
@@ -23,194 +18,7 @@ import (
 	"github.com/bottleneckco/discord-radio/models"
 )
 
-type ControlMessage int
-
-const (
-	Skip ControlMessage = iota
-	Pause
-	Resume
-)
-
-// Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go
-
-func createYTPipe(youtubeURL string) (*bufio.Reader, error) {
-	args := []string{"-q", "-f", "bestaudio[abr>=130],best", "-o", "-", youtubeURL}
-	ytdl := exec.Command("youtube-dl", args...)
-	ytdl.Stderr = os.Stderr
-	ytdlout, err := ytdl.StdoutPipe()
-	if err != nil {
-		log.Println("ytdl StdoutPipe err:", err)
-		return nil, err
-	}
-	err = ytdl.Start()
-	if err != nil {
-		log.Println("ytdl Start err:", err)
-		return nil, err
-	}
-	defer func() {
-		go ytdl.Wait()
-	}()
-	ytdlbuf := bufio.NewReaderSize(ytdlout, 16384)
-	return ytdlbuf, nil
-}
-
-// PlayYouTube play a YouTube video
-func (guildSession *GuildSession) PlayYouTube(youtubeURL string, volume float64) error {
-	log.Printf("[PLAYER] Playing YouTube '%s'\n", youtubeURL)
-
-	ytPipe, err := createYTPipe(youtubeURL)
-	if err != nil {
-		return err
-	}
-	return guildSession.play(ytPipe, volume)
-}
-
-// PlayURL play a URL to an audio/video file
-func (guildSession *GuildSession) PlayURL(url string, volume float64) error {
-	log.Printf("[PLAYER] Playing URL '%s'\n", url)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-
-	return guildSession.play(bufio.NewReader(resp.Body), volume)
-}
-func (guildSession *GuildSession) play(pipe *bufio.Reader, volume float64) error {
-
-	log.Println("[PLAYER] IsPlaying=true")
-	guildSession.MusicPlayer.IsPlaying = true
-
-	defer func() {
-		log.Println("[PLAYER] IsPlaying=false")
-		guildSession.MusicPlayer.IsPlaying = false
-	}()
-
-	ffmpeg := exec.Command("ffmpeg", "-hide_banner", "-nostats", "-loglevel", "error", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "-af", fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=0.95,volume=%f", volume), "-b:a", "256k", "pipe:1")
-	ffmpeg.Stdin = pipe
-	ffmpeg.Stderr = os.Stderr
-	ffmpegout, err := ffmpeg.StdoutPipe()
-	if err != nil {
-		log.Println("ffmpeg StdoutPipe err:", err)
-		return err
-	}
-	ffmpegbuf := bufio.NewReaderSize(ffmpegout, 16384)
-
-	dca := exec.Command("dca")
-	dca.Stdin = ffmpegbuf
-	dca.Stderr = os.Stderr
-	dcaout, err := dca.StdoutPipe()
-	if err != nil {
-		log.Println("dca StdoutPipe err:", err)
-		return err
-	}
-	dcabuf := bufio.NewReaderSize(dcaout, 16384)
-
-	err = ffmpeg.Start()
-	if err != nil {
-		log.Println("ffmpeg Start err:", err)
-		return err
-	}
-	defer func() {
-		go ffmpeg.Wait()
-	}()
-
-	err = dca.Start()
-	if err != nil {
-		log.Println("dca Start err:", err)
-		return err
-	}
-	defer func() {
-		go dca.Wait()
-	}()
-
-	// header "buffer"
-	var opuslen int16
-
-	// Send "speaking" packet over the voice websocket
-	if guildSession.VoiceConnection != nil {
-		guildSession.VoiceConnection.Speaking(true)
-	}
-
-	// Send not "speaking" packet over the websocket when we finish
-	defer func() {
-		if guildSession.VoiceConnection != nil {
-			guildSession.VoiceConnection.Speaking(false)
-		}
-	}()
-
-	guildSession.MusicPlayer.StartTime = time.Now()
-
-	for {
-		select {
-		case <-guildSession.MusicPlayer.Close:
-			log.Println("play() exited due to close channel.")
-			return nil
-		default:
-		}
-
-		select {
-		case ctl := <-guildSession.MusicPlayer.Control:
-			switch ctl {
-			case Skip:
-				log.Println("received skip")
-				return nil
-			case Pause:
-				done := false
-				for {
-
-					ctl, ok := <-guildSession.MusicPlayer.Control
-					if !ok {
-						return nil
-					}
-					switch ctl {
-					case Skip:
-						return nil
-					case Resume:
-						done = true
-						break
-					}
-
-					if done {
-						break
-					}
-
-				}
-			}
-		default:
-		}
-
-		// read dca opus length header
-		err = binary.Read(dcabuf, binary.LittleEndian, &opuslen)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return err
-		}
-		if err != nil {
-			log.Println("read opus length from dca err:", err)
-			return err
-		}
-
-		// read opus data from dca
-		opus := make([]byte, opuslen)
-		err = binary.Read(dcabuf, binary.LittleEndian, &opus)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return err
-		}
-		if err != nil {
-			log.Println("read opus from dca err:", err)
-			return err
-		}
-
-		// Send received PCM to the sendPCM channel
-		if guildSession.VoiceConnection != nil {
-			guildSession.VoiceConnection.OpusSend <- opus
-		} else {
-			log.Println("[PLAYER] VoiceConnection nil, terminating OPUS transmission")
-		}
-	}
-}
-
-func GenerateAutoPlaylistQueueItem(guildSession *GuildSession) (models.QueueItem, error) {
+func GenerateAutoPlaylistQueueItem(guildSession *models.GuildSession) (models.QueueItem, error) {
 	var data models.QueueItem
 	parsedURI, err := url.ParseRequestURI(os.Getenv("BOT_AUTO_PLAYLIST"))
 	if err != nil {
@@ -248,9 +56,9 @@ func GenerateAutoPlaylistQueueItem(guildSession *GuildSession) (models.QueueItem
 		}
 		chosenListingSnippet = chosenListingSnippets.Items[0]
 
-		if guildSession.previousAutoPlaylistListing != nil && textdistance.LevenshteinDistance(guildSession.previousAutoPlaylistListing.Snippet.Title, chosenListingSnippet.Snippet.Title) > 20 {
-			guildSession.previousAutoPlaylistListing = chosenListing
-			guildSession.previousAutoPlaylistListing.Snippet = &youtube.PlaylistItemSnippet{Title: chosenListingSnippet.Snippet.Title}
+		if guildSession.PreviousAutoPlaylistListing != nil && textdistance.LevenshteinDistance(guildSession.PreviousAutoPlaylistListing.Snippet.Title, chosenListingSnippet.Snippet.Title) > 20 {
+			guildSession.PreviousAutoPlaylistListing = chosenListing
+			guildSession.PreviousAutoPlaylistListing.Snippet = &youtube.PlaylistItemSnippet{Title: chosenListingSnippet.Snippet.Title}
 			break
 		} else {
 			break
@@ -269,7 +77,7 @@ func GenerateAutoPlaylistQueueItem(guildSession *GuildSession) (models.QueueItem
 	return data, nil
 }
 
-func SafeCheckPlay(guildSession *GuildSession) {
+func SafeCheckPlay(guildSession *models.GuildSession) {
 	if guildSession.VoiceConnection == nil {
 		log.Println("[SCP] no voice connection")
 		return

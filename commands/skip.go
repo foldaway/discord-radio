@@ -21,7 +21,7 @@ func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// No args, skip current
 		skippedItem = guildSession.Queue[0]
 		// Queue = append(Queue[:0], Queue[1:]...)
-		guildSession.MusicPlayer.Control <- Skip
+		guildSession.MusicPlayer.Control <- models.MusicPlayerActionSkip
 	} else {
 		choice, err := strconv.ParseInt(m.Content, 10, 64)
 		if err == nil && (choice-1 >= 0 && choice-1 < int64(len(guildSession.Queue))) {

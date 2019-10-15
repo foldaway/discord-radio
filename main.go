@@ -33,25 +33,27 @@ func main() {
 				return
 			default:
 				// Update music status
-				if len(commands.GuildSessionMap) == 0 {
-					dg.UpdateStatus(1, "")
-				} else {
-					var sb strings.Builder
-					for _, guildSession := range commands.GuildSessionMap {
-						if len(guildSession.Queue) > 0 && guildSession.MusicPlayer.IsPlaying {
-							guild, err := dg.Guild(guildSession.GuildID)
-							if err != nil {
-								log.Println(err)
-								continue
+				if time.Now().Second()%5 == 0 {
+					if len(commands.GuildSessionMap) == 0 {
+						dg.UpdateStatus(1, "")
+					} else {
+						var sb strings.Builder
+						for _, guildSession := range commands.GuildSessionMap {
+							if len(guildSession.Queue) > 0 && guildSession.MusicPlayer.IsPlaying {
+								guild, err := dg.Guild(guildSession.GuildID)
+								if err != nil {
+									log.Println(err)
+									continue
+								}
+								song := guildSession.Queue[0]
+								sb.WriteString(fmt.Sprintf("[%s] %s (%s) | ", guild.Name, song.Title, song.ChannelTitle))
 							}
-							song := guildSession.Queue[0]
-							sb.WriteString(fmt.Sprintf("[%s] %s (%s) | ", guild.Name, song.Title, song.ChannelTitle))
 						}
+						dg.UpdateStatus(0, sb.String())
 					}
-					dg.UpdateStatus(0, sb.String())
 				}
 			}
-			time.Sleep(5 * time.Second)
+			time.Sleep(500 * time.Millisecond)
 		}
 	}()
 

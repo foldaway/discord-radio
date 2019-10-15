@@ -7,7 +7,7 @@ import (
 )
 
 func suicide(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guildSession := safeGetGuildSession(s, m.GuildID)
+	guildSession := safeGetGuildSession(m.GuildID)
 	s.ChannelMessageSend(m.ChannelID, "Goodbye, cruel world!")
 	if guildSession.VoiceConnection != nil {
 		guildSession.VoiceConnection.Disconnect()

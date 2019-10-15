@@ -9,7 +9,7 @@ import (
 )
 
 func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guildSession := safeGetGuildSession(s, m.GuildID)
+	guildSession := safeGetGuildSession(m.GuildID)
 	guildSession.Mutex.Lock()
 	if len(guildSession.Queue) == 0 {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing in the queue.", m.Author.Mention()))

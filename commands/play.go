@@ -18,7 +18,7 @@ import (
 var tempSearchResultsCache = make(map[string][]*youtube.SearchResult)
 
 func play(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guildSession := safeGetGuildSession(s, m.GuildID)
+	guildSession := safeGetGuildSession(m.GuildID)
 	if guildSession.VoiceConnection == nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s I am not in any voice channel", m.Author.Mention()))
 		return

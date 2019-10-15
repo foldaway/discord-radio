@@ -4,6 +4,7 @@ import (
 	youtube "google.golang.org/api/youtube/v3"
 )
 
+// QueueItem represents an item in the music queue
 type QueueItem struct {
 	Title        string
 	ChannelTitle string

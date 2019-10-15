@@ -7,11 +7,12 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/evalphobia/google-tts-go/googletts"
@@ -32,8 +33,51 @@ const (
 
 // Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go
 
-func (guildSession *GuildSession) Play(url, volume string) {
+func createYTPipe(youtubeURL string) (*bufio.Reader, error) {
+	args := []string{"-q", "-f", "bestaudio[abr>=130],best", "-o", "-", youtubeURL}
+	ytdl := exec.Command("youtube-dl", args...)
+	ytdl.Stderr = os.Stderr
+	ytdlout, err := ytdl.StdoutPipe()
+	if err != nil {
+		log.Println("ytdl StdoutPipe err:", err)
+		return nil, err
+	}
+	err = ytdl.Start()
+	if err != nil {
+		log.Println("ytdl Start err:", err)
+		return nil, err
+	}
+	defer func() {
+		go ytdl.Wait()
+	}()
+	ytdlbuf := bufio.NewReaderSize(ytdlout, 16384)
+	return ytdlbuf, nil
+}
+
+// PlayYouTube play a YouTube video
+func (guildSession *GuildSession) PlayYouTube(youtubeURL string, volume float64) error {
+	log.Printf("[PLAYER] Playing YouTube '%s'\n", youtubeURL)
+
+	ytPipe, err := createYTPipe(youtubeURL)
+	if err != nil {
+		return err
+	}
+	return guildSession.play(ytPipe, volume)
+}
+
+// PlayURL play a URL to an audio/video file
+func (guildSession *GuildSession) PlayURL(url string, volume float64) error {
 	log.Printf("[PLAYER] Playing URL '%s'\n", url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+
+	return guildSession.play(bufio.NewReader(resp.Body), volume)
+}
+func (guildSession *GuildSession) play(pipe *bufio.Reader, volume float64) error {
+
 	log.Println("[PLAYER] IsPlaying=true")
 	guildSession.MusicPlayer.IsPlaying = true
 
@@ -42,26 +86,13 @@ func (guildSession *GuildSession) Play(url, volume string) {
 		guildSession.MusicPlayer.IsPlaying = false
 	}()
 
-	args := []string{"-q"}
-	if strings.Contains(url, "youtube.com") {
-		args = append(args, "-f", "bestaudio[abr>=130],best")
-	}
-	args = append(args, "-o", "-", url)
-	ytdl := exec.Command("youtube-dl", args...)
-	ytdl.Stderr = os.Stderr
-	ytdlout, err := ytdl.StdoutPipe()
-	if err != nil {
-		log.Println("ytdl StdoutPipe err:", err)
-		return
-	}
-	ytdlbuf := bufio.NewReaderSize(ytdlout, 16384)
-	ffmpeg := exec.Command("ffmpeg", "-hide_banner", "-nostats", "-loglevel", "error", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "-af", fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=0.95,volume=%s", volume), "-b:a", "256k", "pipe:1")
-	ffmpeg.Stdin = ytdlbuf
+	ffmpeg := exec.Command("ffmpeg", "-hide_banner", "-nostats", "-loglevel", "error", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "-af", fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=0.95,volume=%f", volume), "-b:a", "256k", "pipe:1")
+	ffmpeg.Stdin = pipe
 	ffmpeg.Stderr = os.Stderr
 	ffmpegout, err := ffmpeg.StdoutPipe()
 	if err != nil {
 		log.Println("ffmpeg StdoutPipe err:", err)
-		return
+		return err
 	}
 	ffmpegbuf := bufio.NewReaderSize(ffmpegout, 16384)
 
@@ -71,23 +102,14 @@ func (guildSession *GuildSession) Play(url, volume string) {
 	dcaout, err := dca.StdoutPipe()
 	if err != nil {
 		log.Println("dca StdoutPipe err:", err)
-		return
+		return err
 	}
 	dcabuf := bufio.NewReaderSize(dcaout, 16384)
-
-	err = ytdl.Start()
-	if err != nil {
-		log.Println("ytdl Start err:", err)
-		return
-	}
-	defer func() {
-		go ytdl.Wait()
-	}()
 
 	err = ffmpeg.Start()
 	if err != nil {
 		log.Println("ffmpeg Start err:", err)
-		return
+		return err
 	}
 	defer func() {
 		go ffmpeg.Wait()
@@ -96,7 +118,7 @@ func (guildSession *GuildSession) Play(url, volume string) {
 	err = dca.Start()
 	if err != nil {
 		log.Println("dca Start err:", err)
-		return
+		return err
 	}
 	defer func() {
 		go dca.Wait()
@@ -123,7 +145,7 @@ func (guildSession *GuildSession) Play(url, volume string) {
 		select {
 		case <-guildSession.MusicPlayer.Close:
 			log.Println("play() exited due to close channel.")
-			return
+			return nil
 		default:
 		}
 
@@ -132,18 +154,18 @@ func (guildSession *GuildSession) Play(url, volume string) {
 			switch ctl {
 			case Skip:
 				log.Println("received skip")
-				return
+				return nil
 			case Pause:
 				done := false
 				for {
 
 					ctl, ok := <-guildSession.MusicPlayer.Control
 					if !ok {
-						return
+						return nil
 					}
 					switch ctl {
 					case Skip:
-						return
+						return nil
 					case Resume:
 						done = true
 						break
@@ -161,22 +183,22 @@ func (guildSession *GuildSession) Play(url, volume string) {
 		// read dca opus length header
 		err = binary.Read(dcabuf, binary.LittleEndian, &opuslen)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return
+			return err
 		}
 		if err != nil {
 			log.Println("read opus length from dca err:", err)
-			return
+			return err
 		}
 
 		// read opus data from dca
 		opus := make([]byte, opuslen)
 		err = binary.Read(dcabuf, binary.LittleEndian, &opus)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return
+			return err
 		}
 		if err != nil {
 			log.Println("read opus from dca err:", err)
-			return
+			return err
 		}
 
 		// Send received PCM to the sendPCM channel
@@ -184,7 +206,6 @@ func (guildSession *GuildSession) Play(url, volume string) {
 			guildSession.VoiceConnection.OpusSend <- opus
 		} else {
 			log.Println("[PLAYER] VoiceConnection nil, terminating OPUS transmission")
-			return
 		}
 	}
 }
@@ -277,10 +298,15 @@ func SafeCheckPlay(guildSession *GuildSession) {
 
 	if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", sanitiseSongTitle(song.Title)), "en"); err == nil {
 		log.Println("[PLAYER] Announcing upcoming song title")
-		guildSession.Play(ttsMsgURL, "0.5")
+		guildSession.PlayURL(ttsMsgURL, 0.5)
 	}
 	log.Println("[PLAYER] Playing the actual song data")
-	guildSession.Play(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), os.Getenv("BOT_VOLUME"))
+	volume := 0.5
+	volumeConv, err := strconv.ParseFloat(os.Getenv("BOT_VOLUME"), 64)
+	if err == nil {
+		volume = volumeConv
+	}
+	guildSession.PlayYouTube(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), volume)
 	guildSession.Mutex.Lock()
 	if len(guildSession.Queue) > 0 {
 		guildSession.Queue = guildSession.Queue[1:]

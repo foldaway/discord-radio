@@ -106,7 +106,7 @@ func main() {
 			if isSomethingPlaying {
 				guildSession.MusicPlayer.Control <- commands.Pause
 			}
-			guildSession.Play(url, "0.5")
+			guildSession.PlayURL(url, 0.5)
 			if isSomethingPlaying {
 				guildSession.MusicPlayer.Control <- commands.Resume
 				log.Println("[MAIN] Patching MusicPlayer IsPlaying=true")

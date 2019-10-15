@@ -38,6 +38,6 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 		updateCmd.Stderr = os.Stderr
 		updateCmd.Run()
 	}
-	guildSession.Play(url, "0.5")
+	guildSession.PlayURL(url, 0.5)
 	SafeCheckPlay(guildSession)
 }

@@ -3,79 +3,15 @@ package commands
 import (
 	"fmt"
 	"log"
-	"math/rand"
-	"net/url"
 	"os"
 	"regexp"
 	"strconv"
-	"time"
 
 	"github.com/evalphobia/google-tts-go/googletts"
-	"github.com/masatana/go-textdistance"
-
-	"google.golang.org/api/youtube/v3"
 
 	"github.com/bottleneckco/discord-radio/models"
+	"github.com/bottleneckco/discord-radio/util"
 )
-
-func GenerateAutoPlaylistQueueItem(guildSession *models.GuildSession) (models.QueueItem, error) {
-	var data models.QueueItem
-	parsedURI, err := url.ParseRequestURI(os.Getenv("BOT_AUTO_PLAYLIST"))
-	if err != nil {
-		return data, err
-	}
-	var listings []*youtube.PlaylistItem
-	var pageToken string
-	for {
-		youtubeListings, err := youtubeService.PlaylistItems.List("contentDetails").PlaylistId(parsedURI.Query().Get("list")).MaxResults(50).PageToken(pageToken).Do()
-		if err != nil {
-			return data, err
-		}
-		listings = append(listings, youtubeListings.Items...)
-		pageToken = youtubeListings.NextPageToken
-		if len(pageToken) == 0 {
-			break
-		}
-	}
-
-	log.Printf("[AP] Fetched %d items\n", len(listings))
-
-	rand.Seed(time.Now().Unix())
-
-	var chosenListing *youtube.PlaylistItem
-	var chosenListingSnippet *youtube.Video
-
-	for {
-		chosenListing = listings[rand.Intn(len(listings))]
-		chosenListingSnippets, err := youtubeService.Videos.List("snippet").Id(chosenListing.ContentDetails.VideoId).Do()
-		if err != nil {
-			return data, err
-		}
-		if len(chosenListingSnippets.Items) == 0 {
-			continue
-		}
-		chosenListingSnippet = chosenListingSnippets.Items[0]
-
-		if guildSession.PreviousAutoPlaylistListing != nil && textdistance.LevenshteinDistance(guildSession.PreviousAutoPlaylistListing.Snippet.Title, chosenListingSnippet.Snippet.Title) > 20 {
-			guildSession.PreviousAutoPlaylistListing = chosenListing
-			guildSession.PreviousAutoPlaylistListing.Snippet = &youtube.PlaylistItemSnippet{Title: chosenListingSnippet.Snippet.Title}
-			break
-		} else {
-			break
-		}
-	}
-
-	log.Printf("[AP] Chosen video '%s' by '%s'\n", chosenListingSnippet.Snippet.Title, chosenListingSnippet.Snippet.ChannelTitle)
-
-	data = models.QueueItem{
-		Title:        chosenListingSnippet.Snippet.Title,
-		ChannelTitle: chosenListingSnippet.Snippet.ChannelTitle,
-		Author:       "AutoPlaylist",
-		VideoID:      chosenListing.ContentDetails.VideoId,
-		Thumbnail:    chosenListingSnippet.Snippet.Thumbnails.Default.Url,
-	}
-	return data, nil
-}
 
 func SafeCheckPlay(guildSession *models.GuildSession) {
 	if guildSession.VoiceConnection == nil {
@@ -91,11 +27,12 @@ func SafeCheckPlay(guildSession *models.GuildSession) {
 		return
 	} else if len(guildSession.Queue) == 0 {
 		log.Println("[SCP] Getting from auto playlist")
-		queueItem, err := GenerateAutoPlaylistQueueItem(guildSession)
+		playlistItem, err := util.GenerateAutoPlaylistQueueItem(guildSession.PreviousAutoPlaylistListing)
 		if err != nil {
 			log.Printf("[SCP] Error generating auto playlist item: %s\n", err)
 			return
 		}
+		queueItem := util.ConvertYouTubePlaylistItem(playlistItem)
 		guildSession.Mutex.Lock()
 		guildSession.Queue = append(guildSession.Queue, queueItem)
 		guildSession.Mutex.Unlock()

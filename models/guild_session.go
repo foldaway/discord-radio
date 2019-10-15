@@ -48,6 +48,7 @@ type GuildSession struct {
 	Mutex                       sync.Mutex
 	Queue                       []QueueItem // current item = index 0
 	VoiceConnection             *discordgo.VoiceConnection
+	Session                     *discordgo.Session
 	PreviousAutoPlaylistListing *youtube.PlaylistItem
 	MusicPlayer                 MusicPlayer
 }

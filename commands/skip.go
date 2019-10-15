@@ -10,7 +10,7 @@ import (
 )
 
 func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guildSession := safeGetGuildSession(m.GuildID)
+	guildSession := safeGetGuildSession(s, m.GuildID)
 	guildSession.Mutex.Lock()
 	if len(guildSession.Queue) == 0 || !guildSession.MusicPlayer.IsPlaying {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing to skip", m.Author.Mention()))

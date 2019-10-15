@@ -17,6 +17,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var userVoiceStateCache = make(map[string]discordgo.VoiceState)
+
 func main() {
 	godotenv.Load()
 	dg, err := discordgo.New(fmt.Sprintf("Bot %s", os.Getenv("DISCORD_TOKEN")))
@@ -76,17 +78,34 @@ func main() {
 	})
 
 	dg.AddHandler(func(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
-		guildSession, ok := commands.GuildSessionMap[vsu.GuildID]
-		if !ok || guildSession.VoiceConnection == nil {
-			return
-		}
-		channel, err := s.Channel(guildSession.VoiceConnection.ChannelID)
+		// Populate all voice states
+		voiceChannelUsers, err := util.GetUsersInVoiceChannel(s, vsu.GuildID, vsu.ChannelID)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		if channel.ID != guildSession.VoiceConnection.ChannelID {
-			// Not my voice channel
+
+		for _, user := range voiceChannelUsers {
+			if _, isExist := userVoiceStateCache[user.UserID]; !isExist {
+				userVoiceStateCache[user.UserID] = *user
+			}
+		}
+
+		previousVoiceState, hasPreviousVoiceState := userVoiceStateCache[vsu.UserID]
+		userVoiceStateCache[vsu.UserID] = *vsu.VoiceState
+		guildSession, ok := commands.GuildSessionMap[vsu.GuildID]
+
+		if !ok || guildSession.VoiceConnection == nil {
+			log.Println("[VSU] Not handling, guild has no voice connection")
+			return
+		}
+
+		if hasPreviousVoiceState &&
+			(previousVoiceState.Deaf != vsu.Deaf ||
+				previousVoiceState.Mute != vsu.Mute ||
+				previousVoiceState.SelfDeaf != vsu.SelfDeaf ||
+				previousVoiceState.SelfMute != vsu.SelfMute) {
+			log.Println("[VSU] Not handling, it's only a deaf/mute state change")
 			return
 		}
 
@@ -96,12 +115,16 @@ func main() {
 			log.Println(err)
 			return
 		}
-		userVoiceState, err := util.FindUserVoiceState(s, vsu.UserID)
-		if userVoiceState == nil || err != nil || vsu.ChannelID == "" {
-			// User disconnected from all voice channels
-			ttsMsg = fmt.Sprintf("Goodbye, %s", guildMember.Nick)
-		} else if channel.ID == userVoiceState.ChannelID && !userVoiceState.SelfMute && !userVoiceState.SelfDeaf { // User joined this channel
-			ttsMsg = fmt.Sprintf("Welcome, %s", guildMember.Nick)
+		username := guildMember.Nick
+		if username == "" {
+			username = guildMember.User.Username
+		}
+		// userVoiceState, err := util.FindUserVoiceState(s, vsu.UserID)
+		if hasPreviousVoiceState && previousVoiceState.ChannelID != vsu.ChannelID && vsu.ChannelID != guildSession.VoiceConnection.ChannelID {
+			// User left this bot's channel
+			ttsMsg = fmt.Sprintf("Goodbye, %s", username)
+		} else if guildSession.VoiceConnection.ChannelID == vsu.ChannelID { // User joined this channel
+			ttsMsg = fmt.Sprintf("Welcome, %s", username)
 		}
 		if len(ttsMsg) > 0 {
 			url, _ := googletts.GetTTSURL(ttsMsg, "en")
@@ -117,7 +140,13 @@ func main() {
 			}
 		}
 
-		if len(util.GetUsersInVoiceChannel(s, guildSession.VoiceConnection.ChannelID)) == 9 {
+		guildSessionVoiceChannelUsers, err := util.GetUsersInVoiceChannel(s, vsu.GuildID, guildSession.VoiceConnection.ChannelID)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		if len(guildSessionVoiceChannelUsers) == 1 {
 			// Only bot left
 			log.Println("Leaving, only me left in voice channel.")
 			s.UpdateStatus(1, "")

@@ -35,7 +35,7 @@ func main() {
 				return
 			default:
 				// Update music status
-				if time.Now().Second()%5 == 0 {
+				if time.Now().Second()%20 == 0 {
 					if len(commands.GuildSessionMap) == 0 {
 						dg.UpdateStatus(1, "")
 					} else {

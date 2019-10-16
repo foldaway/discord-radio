@@ -15,16 +15,21 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildSession := safeGetGuildSession(m.GuildID)
 	voiceState, err := util.FindUserVoiceState(s, m.GuildID, m.Author.ID)
 	if err != nil {
+		log.Println(err)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s you are not in a voice channel", m.Author.Mention()))
 		return
 	}
 	channel, err := s.Channel(voiceState.ChannelID)
 	if err != nil {
+		log.Println(err)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s error occurred: %s", m.Author.Mention(), err))
 		return
 	}
+
 	voiceChannel, err := s.ChannelVoiceJoin(voiceState.GuildID, voiceState.ChannelID, false, true)
+
 	if err != nil {
+		log.Println(err)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s error occurred: %s", m.Author.Mention(), err))
 		return
 	}

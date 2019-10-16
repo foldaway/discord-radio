@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"html"
 	"log"
 	"net/url"
 	"os"
@@ -89,7 +90,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 		b.WriteString(fmt.Sprintf("%s, here are your search results:\n", m.Author.Mention()))
 
 		for index, item := range response.Items {
-			b.WriteString(fmt.Sprintf("`%d.` **%s** `%s`\n", index+1, item.Snippet.Title, item.Snippet.ChannelTitle))
+			b.WriteString(fmt.Sprintf("`%d.` **%s** `%s`\n", index+1, html.UnescapeString(item.Snippet.Title), item.Snippet.ChannelTitle))
 		}
 		b.WriteString("\nreply with a single number, no command needed. Anything else will cancel the search.")
 
@@ -114,7 +115,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 				chosenItem := tempSearchResultsCache[mm.Author.ID][choice-1]
 				guildSession.Mutex.Lock()
 				guildSession.Queue = append(guildSession.Queue, models.QueueItem{
-					Title:        chosenItem.Snippet.Title,
+					Title:        html.UnescapeString(chosenItem.Snippet.Title),
 					ChannelTitle: chosenItem.Snippet.ChannelTitle,
 					Author:       mm.Author.Username,
 					VideoID:      chosenItem.Id.VideoId,
@@ -126,7 +127,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate) {
 						Name:    "Added to queue",
 						IconURL: m.Author.AvatarURL("32"),
 					},
-					Title: chosenItem.Snippet.Title,
+					Title: html.UnescapeString(chosenItem.Snippet.Title),
 					Thumbnail: &discordgo.MessageEmbedThumbnail{
 						URL: chosenItem.Snippet.Thumbnails.Default.Url,
 					},

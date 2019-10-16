@@ -17,39 +17,21 @@ import (
 // CommandsMap a map of all the command handlers
 var CommandsMap = make(map[string]func(*discordgo.Session, *discordgo.MessageCreate))
 
-// MusicPlayer represents a music player
-type MusicPlayer struct {
-	StartTime time.Time
-	IsPlaying bool
-	Close     chan struct{}
-	Control   chan ControlMessage
-}
-
-// GuildSession represents a guild voice session
-type GuildSession struct {
-	GuildID                     string
-	Mutex                       sync.Mutex
-	Queue                       []models.QueueItem // current item = index 0
-	VoiceConnection             *discordgo.VoiceConnection
-	previousAutoPlaylistListing *youtube.PlaylistItem
-	MusicPlayer                 MusicPlayer
-}
-
-func newGuildSession(guildID string) GuildSession {
-	return GuildSession{
+func newGuildSession(guildID string) models.GuildSession {
+	return models.GuildSession{
 		GuildID: guildID,
 		Mutex:   sync.Mutex{},
-		MusicPlayer: MusicPlayer{
+		MusicPlayer: models.MusicPlayer{
 			Close:   make(chan struct{}),
-			Control: make(chan ControlMessage),
+			Control: make(chan models.MusicPlayerAction),
 		},
 	}
 }
 
 // GuildSessionMap a map of all the guild sessions
-var GuildSessionMap = make(map[string]*GuildSession)
+var GuildSessionMap = make(map[string]*models.GuildSession)
 
-func safeGetGuildSession(guildID string) *GuildSession {
+func safeGetGuildSession(guildID string) *models.GuildSession {
 	if session, ok := GuildSessionMap[guildID]; ok {
 		return session
 	}

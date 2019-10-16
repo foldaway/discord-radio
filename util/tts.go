@@ -1,11 +1,32 @@
 package util
 
-import "regexp"
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+var (
+	ttsBannedWords = []string{
+		"official",
+		"music video",
+		"special video",
+		"lyric video",
+		"M/?V",
+	}
+	ttsParenthesisRegex = regexp.MustCompile(`(\(.+?\)|\[.+?\]|【.+?】)`)
+	ttsBannedWordsRegex = regexp.MustCompile(fmt.Sprintf("(?i)(%s)", strings.Join(ttsBannedWords, "|")))
+)
 
 // SanitiseSongTitleTTS process a song title for TTS reading
 func SanitiseSongTitleTTS(title string) string {
-	parenthesisRegex := regexp.MustCompile(`(\(.+?\)|\[.+?\])`)
-	// alphabetNumberOnly := regexp.MustCompile(`[^a-zA-Z0-9\s&]+`)
-	bannedWordsRegex := regexp.MustCompile(`(official|music video|special video|lyric video)`)
-	return bannedWordsRegex.ReplaceAllString(parenthesisRegex.ReplaceAllString(title, ""), "")
+	return ttsBannedWordsRegex.
+		ReplaceAllString(
+			ttsParenthesisRegex.
+				ReplaceAllString(
+					title,
+					"",
+				),
+			"",
+		)
 }

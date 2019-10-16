@@ -13,6 +13,9 @@ var (
 		"special video",
 		"lyric video",
 		"M/?V",
+		"colou?r coded lyrics",
+		"1080p",
+		"720p",
 	}
 	ttsParenthesisRegex = regexp.MustCompile(`(\(.+?\)|\[.+?\]|【.+?】)`)
 	ttsBannedWordsRegex = regexp.MustCompile(fmt.Sprintf("(?i)(%s)", strings.Join(ttsBannedWords, "|")))

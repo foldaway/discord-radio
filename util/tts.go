@@ -17,7 +17,7 @@ var (
 		"1080p",
 		"720p",
 	}
-	ttsParenthesisRegex = regexp.MustCompile(`(\(.+?\)|\[.+?\]|【.+?】)`)
+	ttsParenthesisRegex = regexp.MustCompile(`(\(.+?\)|\[.+?\])`)
 	ttsBannedWordsRegex = regexp.MustCompile(fmt.Sprintf("(?i)(%s)", strings.Join(ttsBannedWords, "|")))
 )
 

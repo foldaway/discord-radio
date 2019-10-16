@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -86,7 +85,7 @@ func (guildSession *GuildSession) Loop() {
 		var song = guildSession.Queue[0]
 		guildSession.Mutex.Unlock()
 
-		if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", sanitiseSongTitle(song.Title)), "en"); err == nil {
+		if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", util.SanitiseSongTitleTTS(song.Title)), "en"); err == nil {
 			log.Println("[PLAYER] Announcing upcoming song title")
 			guildSession.PlayURL(ttsMsgURL, 0.5)
 		}
@@ -103,13 +102,6 @@ func (guildSession *GuildSession) Loop() {
 		}
 		guildSession.Mutex.Unlock()
 	}
-}
-
-func sanitiseSongTitle(title string) string {
-	parenthesisRegex := regexp.MustCompile(`(\(.+?\)|\[.+?\])`)
-	alphabetNumberOnly := regexp.MustCompile(`[^a-zA-Z0-9\s&]+`)
-	bannedWordsRegex := regexp.MustCompile(`(official|music video|special video|lyric video)`)
-	return alphabetNumberOnly.ReplaceAllString(bannedWordsRegex.ReplaceAllString(parenthesisRegex.ReplaceAllString(title, ""), ""), "")
 }
 
 // Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go

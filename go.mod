@@ -2,6 +2,7 @@ module github.com/bottleneckco/discord-radio
 
 require (
 	github.com/bwmarrin/discordgo v0.19.0
+	github.com/chrisport/go-lang-detector v0.0.0-20180912070833-7e13c74bc6e3
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/evalphobia/google-tts-go v0.3.0
 	github.com/gorilla/websocket v1.4.1 // indirect

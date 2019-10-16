@@ -55,23 +55,27 @@ type GuildSession struct {
 // Loop session management loop
 func (guildSession *GuildSession) Loop() {
 	for {
+		log.Println("LOOP")
 		if guildSession.VoiceConnection == nil {
 			time.Sleep(1 * time.Second)
 			continue
 		}
 		if guildSession.MusicPlayer.IsPlaying {
 			log.Println("[SCP] currently playing something!")
-			return
+			time.Sleep(1 * time.Second)
+			continue
 		}
 		if len(guildSession.Queue) == 0 && len(os.Getenv("BOT_AUTO_PLAYLIST")) == 0 {
 			log.Println("[SCP] no items in queue")
-			return
+			time.Sleep(1 * time.Second)
+			continue
 		} else if len(guildSession.Queue) == 0 {
 			log.Println("[SCP] Getting from auto playlist")
 			playlistItem, err := util.GenerateAutoPlaylistQueueItem(guildSession.PreviousAutoPlaylistListing)
 			if err != nil {
 				log.Printf("[SCP] Error generating auto playlist item: %s\n", err)
-				return
+				time.Sleep(1 * time.Second)
+				continue
 			}
 			queueItem := ConvertYouTubePlaylistItem(playlistItem)
 			guildSession.Mutex.Lock()

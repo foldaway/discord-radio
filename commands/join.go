@@ -12,6 +12,12 @@ import (
 )
 
 func join(s *discordgo.Session, m *discordgo.MessageCreate) {
+	voiceChannelInit(s, m)
+	guildSession := safeGetGuildSession(m.GuildID)
+	go guildSession.Loop()
+}
+
+func voiceChannelInit(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildSession := safeGetGuildSession(m.GuildID)
 	voiceState, err := util.FindUserVoiceState(s, m.GuildID, m.Author.ID)
 	if err != nil {
@@ -44,5 +50,4 @@ func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 		updateCmd.Run()
 	}
 	guildSession.PlayURL(url, 0.5)
-	go guildSession.Loop()
 }

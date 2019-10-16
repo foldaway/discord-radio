@@ -12,9 +12,11 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bwmarrin/discordgo"
+	"github.com/chrisport/go-lang-detector/langdet"
 	"github.com/evalphobia/google-tts-go/googletts"
 	youtube "google.golang.org/api/youtube/v3"
 )
@@ -85,7 +87,17 @@ func (guildSession *GuildSession) Loop() {
 		var song = guildSession.Queue[0]
 		guildSession.Mutex.Unlock()
 
-		if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", util.SanitiseSongTitleTTS(song.Title)), "en"); err == nil {
+		// Announce music title
+		songTitle := util.SanitiseSongTitleTTS(song.Title)
+
+		detector := langdet.NewDetector()
+		clc := langdet.UnicodeRangeLanguageComparator{"zh-TW", unicode.Han}
+		jlc := langdet.UnicodeRangeLanguageComparator{"ja", unicode.Katakana}
+		klc := langdet.UnicodeRangeLanguageComparator{"ko", unicode.Hangul}
+		eng := langdet.UnicodeRangeLanguageComparator{"en", unicode.ASCII_Hex_Digit}
+		detector.AddLanguageComparators(&clc, &jlc, &klc, &eng)
+
+		if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", songTitle), detector.GetLanguages(songTitle)[0].Name); err == nil {
 			log.Println("[PLAYER] Announcing upcoming song title")
 			guildSession.PlayURL(ttsMsgURL, 0.5)
 		}

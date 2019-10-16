@@ -9,7 +9,7 @@ import (
 
 func leave(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if guildSession, ok := GuildSessionMap[m.GuildID]; ok {
-		voiceState, err := util.FindUserVoiceState(s, m.Author.ID)
+		voiceState, err := util.FindUserVoiceState(s, m.GuildID, m.Author.ID)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s you are not in a voice channel", m.Author.Mention()))
 			return

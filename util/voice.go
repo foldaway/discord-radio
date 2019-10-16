@@ -6,12 +6,15 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func FindUserVoiceState(session *discordgo.Session, userid string) (*discordgo.VoiceState, error) {
-	for _, guild := range session.State.Guilds {
-		for _, vs := range guild.VoiceStates {
-			if vs.UserID == userid {
-				return vs, nil
-			}
+// FindUserVoiceState find the voice state of a user
+func FindUserVoiceState(session *discordgo.Session, guildID string, userid string) (*discordgo.VoiceState, error) {
+	guild, err := session.Guild(guildID)
+	if err != nil {
+		return nil, err
+	}
+	for _, vs := range guild.VoiceStates {
+		if vs.UserID == userid {
+			return vs, nil
 		}
 	}
 	return nil, errors.New("Could not find user's voice state")

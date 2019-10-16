@@ -13,7 +13,7 @@ import (
 
 func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildSession := safeGetGuildSession(m.GuildID)
-	voiceState, err := util.FindUserVoiceState(s, m.Author.ID)
+	voiceState, err := util.FindUserVoiceState(s, m.GuildID, m.Author.ID)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s you are not in a voice channel", m.Author.Mention()))
 		return

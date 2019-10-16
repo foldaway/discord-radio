@@ -68,10 +68,21 @@ func main() {
 		log.Printf("[MESSAGE] '%s' - '%s'\n", m.Content, m.Author.Username)
 		parts := strings.Split(m.Content, " ")
 
-		if strings.HasPrefix(parts[0], os.Getenv("BOT_COMMAND_PREFIX")) {
-			if handler, ok := commands.CommandsMap[parts[0][1:]]; ok {
+		var command string
+		var args []string
+
+		if len(m.Mentions) >= 1 && m.Mentions[0].ID == s.State.User.ID && len(parts) >= 2 {
+			command = parts[1]
+			args = parts[2:]
+		} else if strings.HasPrefix(parts[0], os.Getenv("BOT_COMMAND_PREFIX")) {
+			command = parts[0][1:]
+			args = parts[1:]
+		}
+
+		if command != "" {
+			if handler, ok := commands.CommandsMap[command]; ok {
 				log.Printf("[COMMAND] Processing command '%s'\n", parts[0][1:])
-				m.Content = strings.Join(parts[1:], " ")
+				m.Content = strings.Join(args, " ")
 				handler(s, m)
 			}
 		}

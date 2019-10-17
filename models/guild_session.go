@@ -287,6 +287,7 @@ func (guildSession *GuildSession) play(pipe *bufio.Reader, volume float64) error
 			guildSession.VoiceConnection.SendOpusFrame(opus)
 		} else {
 			log.Println("[PLAYER] VoiceConnection nil, terminating OPUS transmission")
+			return nil
 		}
 	}
 }

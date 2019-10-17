@@ -181,13 +181,21 @@ func main() {
 		}
 	})
 
-	go client.StayConnectedUntilInterrupted()
+	err := client.Connect()
+	if err != nil {
+		log.Panic(err)
+	}
 
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
+
+	err = client.Disconnect()
+	if err != nil {
+		log.Panic(err)
+	}
 
 	for _, guildSession := range commands.GuildSessionMap {
 		if guildSession.VoiceConnection != nil {

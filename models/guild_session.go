@@ -14,8 +14,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/andersfylling/disgord"
 	"github.com/bottleneckco/discord-radio/util"
-	"github.com/bwmarrin/discordgo"
 	"github.com/chrisport/go-lang-detector/langdet"
 	"github.com/evalphobia/google-tts-go/googletts"
 	youtube "google.golang.org/api/youtube/v3"
@@ -45,10 +45,11 @@ const (
 
 // GuildSession represents a guild voice session
 type GuildSession struct {
-	GuildID                     string
+	GuildID                     disgord.Snowflake
 	Mutex                       sync.Mutex
 	Queue                       []QueueItem // current item = index 0
-	VoiceConnection             *discordgo.VoiceConnection
+	VoiceConnection             disgord.VoiceConnection
+	VoiceChannelID              disgord.Snowflake
 	PreviousAutoPlaylistListing *youtube.PlaylistItem
 	MusicPlayer                 MusicPlayer
 }
@@ -214,13 +215,13 @@ func (guildSession *GuildSession) play(pipe *bufio.Reader, volume float64) error
 
 	// Send "speaking" packet over the voice websocket
 	if guildSession.VoiceConnection != nil {
-		guildSession.VoiceConnection.Speaking(true)
+		guildSession.VoiceConnection.StartSpeaking()
 	}
 
 	// Send not "speaking" packet over the websocket when we finish
 	defer func() {
 		if guildSession.VoiceConnection != nil {
-			guildSession.VoiceConnection.Speaking(false)
+			guildSession.VoiceConnection.StopSpeaking()
 		}
 	}()
 
@@ -288,7 +289,7 @@ func (guildSession *GuildSession) play(pipe *bufio.Reader, volume float64) error
 
 		// Send received PCM to the sendPCM channel
 		if guildSession.VoiceConnection != nil {
-			guildSession.VoiceConnection.OpusSend <- opus
+			guildSession.VoiceConnection.SendOpusFrame(opus)
 		} else {
 			log.Println("[PLAYER] VoiceConnection nil, terminating OPUS transmission")
 		}

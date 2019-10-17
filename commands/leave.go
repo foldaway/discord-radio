@@ -3,20 +3,20 @@ package commands
 import (
 	"fmt"
 
+	"github.com/andersfylling/disgord"
 	"github.com/bottleneckco/discord-radio/util"
-	"github.com/bwmarrin/discordgo"
 )
 
-func leave(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if guildSession, ok := GuildSessionMap[m.GuildID]; ok {
-		voiceState, err := util.FindUserVoiceState(s, m.GuildID, m.Author.ID)
+func leave(s disgord.Session, m *disgord.MessageCreate) {
+	if guildSession, ok := GuildSessionMap[m.Message.GuildID]; ok {
+		voiceState, err := util.FindUserVoiceState(s, m.Message.GuildID, m.Message.Author.ID)
 		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s you are not in a voice channel", m.Author.Mention()))
+			s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s you are not in a voice channel", m.Message.Author.Mention()))
 			return
 		}
-		channel, err := s.Channel(voiceState.ChannelID)
+		channel, err := s.GetChannel(voiceState.ChannelID)
 		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s error occurred: %s", m.Author.Mention(), err))
+			s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s error occurred: %s", m.Message.Author.Mention(), err))
 			return
 		}
 		// Actual disconnect code
@@ -27,11 +27,11 @@ func leave(s *discordgo.Session, m *discordgo.MessageCreate) {
 		guildSession.Queue = guildSession.Queue[0:0]
 		guildSession.Mutex.Unlock()
 		guildSession.MusicPlayer.Close <- struct{}{}
-		tempVoiceConn.Disconnect()
-		delete(GuildSessionMap, m.GuildID)
+		tempVoiceConn.Close()
+		delete(GuildSessionMap, m.Message.GuildID)
 
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s left '%s'", m.Author.Mention(), channel.Name))
+		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s left '%s'", m.Message.Author.Mention(), channel.Name))
 	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s not in voice channel", m.Author.Mention()))
+		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s not in voice channel", m.Message.Author.Mention()))
 	}
 }

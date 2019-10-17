@@ -1,9 +1,7 @@
 package commands
 
-import (
-	"github.com/bwmarrin/discordgo"
-)
+import "github.com/andersfylling/disgord"
 
-func ping(s *discordgo.Session, m *discordgo.MessageCreate) {
-	s.ChannelMessageSend(m.ChannelID, "pong")
+func ping(s disgord.Session, m *disgord.MessageCreate) {
+	s.SendMsg(m.Message.ChannelID, "pong")
 }

@@ -9,22 +9,24 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/andersfylling/disgord"
 	"github.com/bottleneckco/discord-radio/commands"
 	"github.com/bottleneckco/discord-radio/models"
 	"github.com/bottleneckco/discord-radio/util"
-	"github.com/bwmarrin/discordgo"
 	"github.com/evalphobia/google-tts-go/googletts"
 	"github.com/joho/godotenv"
 )
 
-var userVoiceStateCache = make(map[string]discordgo.VoiceState)
+var userVoiceStateCache = make(map[disgord.Snowflake]disgord.VoiceState)
 
 func main() {
 	godotenv.Load()
-	dg, err := discordgo.New(fmt.Sprintf("Bot %s", os.Getenv("DISCORD_TOKEN")))
-	if err != nil {
-		log.Panic(err)
-	}
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	client := disgord.New(&disgord.Config{
+		BotToken: os.Getenv("DISCORD_TOKEN"),
+		Logger:   disgord.DefaultLogger(false),
+	})
 
 	gameStatusQuitChannel := make(chan bool)
 
@@ -37,12 +39,14 @@ func main() {
 				// Update music status
 				if time.Now().Second()%20 == 0 {
 					if len(commands.GuildSessionMap) == 0 {
-						dg.UpdateStatus(1, "")
+						client.UpdateStatus(&disgord.UpdateStatusCommand{
+							AFK: true,
+						})
 					} else {
 						var sb strings.Builder
 						for _, guildSession := range commands.GuildSessionMap {
 							if len(guildSession.Queue) > 0 && guildSession.MusicPlayer.IsPlaying {
-								guild, err := dg.Guild(guildSession.GuildID)
+								guild, err := client.GetGuild(guildSession.GuildID)
 								if err != nil {
 									log.Println(err)
 									continue
@@ -51,7 +55,7 @@ func main() {
 								sb.WriteString(fmt.Sprintf("[%s] %s (%s) | ", guild.Name, song.Title, song.ChannelTitle))
 							}
 						}
-						dg.UpdateStatus(0, sb.String())
+						client.UpdateStatusString(sb.String())
 					}
 				}
 			}
@@ -59,19 +63,24 @@ func main() {
 		}
 	}()
 
-	dg.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+	client.On(disgord.EvtMessageCreate, func(s disgord.Session, m *disgord.MessageCreate) {
 		// Ignore all messages created by the bot itself
-		if m.Author.ID == s.State.User.ID {
+		botUser, err := client.GetCurrentUser()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if m.Message.Author.ID == botUser.ID {
 			return
 		}
 
-		log.Printf("[MESSAGE] '%s' - '%s'\n", m.Content, m.Author.Username)
-		parts := strings.Split(m.Content, " ")
+		log.Printf("[MESSAGE] '%s' - '%s'\n", m.Message.Content, m.Message.Author.Username)
+		parts := strings.Split(m.Message.Content, " ")
 
 		var command string
 		var args []string
 
-		if len(m.Mentions) >= 1 && m.Mentions[0].ID == s.State.User.ID && len(parts) >= 2 {
+		if len(m.Message.Mentions) >= 1 && m.Message.Mentions[0].ID == botUser.ID && len(parts) >= 2 {
 			command = parts[1]
 			args = parts[2:]
 		} else if strings.HasPrefix(parts[0], os.Getenv("BOT_COMMAND_PREFIX")) {
@@ -82,13 +91,13 @@ func main() {
 		if command != "" {
 			if handler, ok := commands.CommandsMap[command]; ok {
 				log.Printf("[COMMAND] Processing command '%s'\n", parts[0][1:])
-				m.Content = strings.Join(args, " ")
+				m.Message.Content = strings.Join(args, " ")
 				handler(s, m)
 			}
 		}
 	})
 
-	dg.AddHandler(func(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
+	client.On(disgord.EvtVoiceStateUpdate, func(s disgord.Session, vsu *disgord.VoiceStateUpdate) {
 		// Populate all voice states
 		voiceChannelUsers, err := util.GetUsersInVoiceChannel(s, vsu.GuildID, vsu.ChannelID)
 		if err != nil {
@@ -121,7 +130,7 @@ func main() {
 		}
 
 		var ttsMsg string
-		guildMember, err := s.GuildMember(vsu.GuildID, vsu.UserID)
+		guildMember, err := client.GetMember(vsu.GuildID, vsu.UserID)
 		if err != nil {
 			log.Println(err)
 			return
@@ -131,10 +140,10 @@ func main() {
 			username = guildMember.User.Username
 		}
 		// userVoiceState, err := util.FindUserVoiceState(s, vsu.UserID)
-		if hasPreviousVoiceState && previousVoiceState.ChannelID != vsu.ChannelID && vsu.ChannelID != guildSession.VoiceConnection.ChannelID {
+		if hasPreviousVoiceState && previousVoiceState.ChannelID != vsu.ChannelID && vsu.ChannelID != guildSession.VoiceChannelID {
 			// User left this bot's channel
 			ttsMsg = fmt.Sprintf("Goodbye, %s", username)
-		} else if guildSession.VoiceConnection.ChannelID == vsu.ChannelID { // User joined this channel
+		} else if guildSession.VoiceChannelID == vsu.ChannelID { // User joined this channel
 			ttsMsg = fmt.Sprintf("Welcome, %s", username)
 		}
 		if len(ttsMsg) > 0 {
@@ -151,7 +160,7 @@ func main() {
 			}
 		}
 
-		guildSessionVoiceChannelUsers, err := util.GetUsersInVoiceChannel(s, vsu.GuildID, guildSession.VoiceConnection.ChannelID)
+		guildSessionVoiceChannelUsers, err := util.GetUsersInVoiceChannel(s, vsu.GuildID, guildSession.VoiceChannelID)
 		if err != nil {
 			log.Println(err)
 			return
@@ -160,7 +169,7 @@ func main() {
 		if len(guildSessionVoiceChannelUsers) == 1 {
 			// Only bot left
 			log.Println("Leaving, only me left in voice channel.")
-			s.UpdateStatus(1, "")
+			s.UpdateStatus(&disgord.UpdateStatusCommand{AFK: true})
 			var tempVoiceConn = guildSession.VoiceConnection
 			guildSession.VoiceConnection = nil
 
@@ -168,14 +177,11 @@ func main() {
 			guildSession.Queue = guildSession.Queue[0:0]
 			guildSession.Mutex.Unlock()
 			guildSession.MusicPlayer.Close <- struct{}{}
-			tempVoiceConn.Disconnect()
+			tempVoiceConn.Close()
 		}
 	})
 
-	err = dg.Open()
-	if err != nil {
-		log.Panic(err)
-	}
+	go client.StayConnectedUntilInterrupted()
 
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
@@ -185,12 +191,9 @@ func main() {
 
 	for _, guildSession := range commands.GuildSessionMap {
 		if guildSession.VoiceConnection != nil {
-			guildSession.VoiceConnection.Disconnect()
+			guildSession.VoiceConnection.Close()
 		}
 	}
 
 	gameStatusQuitChannel <- true
-
-	// Cleanly close down the Discord session.
-	dg.Close()
 }

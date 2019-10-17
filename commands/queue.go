@@ -5,19 +5,19 @@ import (
 	"log"
 	"strings"
 
-	"github.com/bwmarrin/discordgo"
+	"github.com/andersfylling/disgord"
 )
 
-func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guildSession := safeGetGuildSession(m.GuildID)
+func queue(s disgord.Session, m *disgord.MessageCreate) {
+	guildSession := safeGetGuildSession(m.Message.GuildID)
 	guildSession.Mutex.Lock()
 	if len(guildSession.Queue) == 0 {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing in the queue.", m.Author.Mention()))
+		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s nothing in the queue.", m.Message.Author.Mention()))
 		guildSession.Mutex.Unlock()
 		return
 	}
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%s here is the queue:\n", m.Author.Mention()))
+	b.WriteString(fmt.Sprintf("%s here is the queue:\n", m.Message.Author.Mention()))
 
 	b.WriteString(fmt.Sprintf("⏯ **%s**    ▶️️%s   ⏫%s\n", guildSession.Queue[0].Title, guildSession.Queue[0].ChannelTitle, guildSession.Queue[0].Author))
 	for index, queueItem := range guildSession.Queue[1:] {
@@ -25,5 +25,5 @@ func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	guildSession.Mutex.Unlock()
 	log.Println("Off")
-	s.ChannelMessageSend(m.ChannelID, b.String())
+	s.SendMsg(m.Message.ChannelID, b.String())
 }

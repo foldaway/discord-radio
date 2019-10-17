@@ -59,8 +59,7 @@ func (guildSession *GuildSession) Loop() {
 	for {
 		log.Println("LOOP")
 		if guildSession.VoiceConnection == nil {
-			time.Sleep(1 * time.Second)
-			continue
+			return
 		}
 		if guildSession.MusicPlayer.IsPlaying {
 			log.Println("[SCP] currently playing something!")

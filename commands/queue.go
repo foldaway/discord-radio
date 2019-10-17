@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/andersfylling/disgord"
@@ -24,6 +23,5 @@ func queue(s disgord.Session, m *disgord.MessageCreate) {
 		b.WriteString(fmt.Sprintf("`️%d.` **%s**   ⬆️%s   ⏫%s\n", index+2, queueItem.Title, queueItem.ChannelTitle, queueItem.Author))
 	}
 	guildSession.Mutex.Unlock()
-	log.Println("Off")
 	s.SendMsg(m.Message.ChannelID, b.String())
 }

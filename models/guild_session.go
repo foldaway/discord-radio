@@ -57,7 +57,6 @@ type GuildSession struct {
 // Loop session management loop
 func (guildSession *GuildSession) Loop() {
 	for {
-		log.Println("LOOP")
 		if guildSession.VoiceConnection == nil {
 			return
 		}
@@ -162,12 +161,9 @@ func (guildSession *GuildSession) PlayURL(url string, volume float64) error {
 	return guildSession.play(bufio.NewReader(resp.Body), volume)
 }
 func (guildSession *GuildSession) play(pipe *bufio.Reader, volume float64) error {
-
-	log.Println("[PLAYER] IsPlaying=true")
 	guildSession.MusicPlayer.IsPlaying = true
 
 	defer func() {
-		log.Println("[PLAYER] IsPlaying=false")
 		guildSession.MusicPlayer.IsPlaying = false
 	}()
 

@@ -1,4 +1,4 @@
-FROM golang:1.11-alpine3.8 AS build_base
+FROM golang:1.13-alpine AS build_base
 
 RUN apk --no-cache add git gcc musl-dev
 WORKDIR /go/src/github.com/bottleneckco/discord-radio

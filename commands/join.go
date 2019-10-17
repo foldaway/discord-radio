@@ -45,10 +45,12 @@ func voiceChannelInit(s disgord.Session, m *disgord.MessageCreate) {
 	log.Printf(fmt.Sprintf("%s joined '%s' guild '%s'\n", m.Message.Author.Mention(), channel.Name, m.Message.GuildID))
 	url, _ := googletts.GetTTSURL("Ready", "en")
 	if os.Getenv("BOT_UPDATE_YTDL") == "true" {
+		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s updating youtube-dl binary, give me some time.", m.Message.Author.Mention()))
 		updateCmd := exec.Command("/usr/bin/curl", "-L", "https://yt-dl.org/downloads/latest/youtube-dl", "-o", "/usr/local/bin/youtube-dl")
 		updateCmd.Stdout = os.Stdout
 		updateCmd.Stderr = os.Stderr
 		updateCmd.Run()
+		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s done!", m.Message.Author.Mention()))
 	}
 	guildSession.PlayURL(url, 0.5)
 }

@@ -121,20 +121,22 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 					Thumbnail:    chosenItem.Snippet.Thumbnails.Default.Url,
 				})
 				guildSession.Mutex.Unlock()
-				ss.SendMsg(mm.Message.ChannelID, &disgord.Embed{
-					Author: &disgord.EmbedAuthor{
-						Name:    "Added to queue",
-						IconURL: *m.Message.Author.Avatar,
-					},
-					Title: html.UnescapeString(chosenItem.Snippet.Title),
-					Thumbnail: &disgord.EmbedThumbnail{
-						URL: chosenItem.Snippet.Thumbnails.Default.Url,
-					},
-					URL: fmt.Sprintf("https://www.youtube.com/watch?v=%s", chosenItem.Id.VideoId),
-					Fields: []*disgord.EmbedField{
-						&disgord.EmbedField{
-							Name:  "Channel",
-							Value: chosenItem.Snippet.ChannelTitle,
+				ss.SendMsg(mm.Message.ChannelID, &disgord.CreateMessageParams{
+					Embed: &disgord.Embed{
+						Author: &disgord.EmbedAuthor{
+							Name:    "Added to queue",
+							IconURL: fmt.Sprintf("https://cdn.discordapp.com/embed/avatars/%d.png?size=%d", m.Message.Author.Discriminator%5, 32),
+						},
+						Title: html.UnescapeString(chosenItem.Snippet.Title),
+						Thumbnail: &disgord.EmbedThumbnail{
+							URL: chosenItem.Snippet.Thumbnails.Default.Url,
+						},
+						URL: fmt.Sprintf("https://www.youtube.com/watch?v=%s", chosenItem.Id.VideoId),
+						Fields: []*disgord.EmbedField{
+							&disgord.EmbedField{
+								Name:  "Channel",
+								Value: chosenItem.Snippet.ChannelTitle,
+							},
 						},
 					},
 				})

@@ -33,20 +33,23 @@ func skip(s disgord.Session, m *disgord.MessageCreate) {
 		}
 	}
 	guildSession.Mutex.Unlock()
-	s.SendMsg(m.Message.ChannelID, &disgord.Embed{
-		Author: &disgord.EmbedAuthor{
-			Name:    "Removed from queue",
-			IconURL: *m.Message.Author.Avatar,
-		},
-		Title: skippedItem.Title,
-		Thumbnail: &disgord.EmbedThumbnail{
-			URL: skippedItem.Thumbnail,
-		},
-		URL: fmt.Sprintf("https://www.youtube.com/watch?v=%s", skippedItem.VideoID),
-		Fields: []*disgord.EmbedField{
-			&disgord.EmbedField{
-				Name:  "Channel",
-				Value: skippedItem.ChannelTitle,
+
+	s.SendMsg(m.Message.ChannelID, &disgord.CreateMessageParams{
+		Embed: &disgord.Embed{
+			Author: &disgord.EmbedAuthor{
+				Name:    "Removed from queue",
+				IconURL: fmt.Sprintf("https://cdn.discordapp.com/embed/avatars/%d.png?size=%d", m.Message.Author.Discriminator%5, 32),
+			},
+			Title: skippedItem.Title,
+			Thumbnail: &disgord.EmbedThumbnail{
+				URL: skippedItem.Thumbnail,
+			},
+			URL: fmt.Sprintf("https://www.youtube.com/watch?v=%s", skippedItem.VideoID),
+			Fields: []*disgord.EmbedField{
+				&disgord.EmbedField{
+					Name:  "Channel",
+					Value: skippedItem.ChannelTitle,
+				},
 			},
 		},
 	})

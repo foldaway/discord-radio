@@ -192,15 +192,15 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
-	err = client.Disconnect()
-	if err != nil {
-		log.Panic(err)
-	}
-
 	for _, guildSession := range commands.GuildSessionMap {
 		if guildSession.VoiceConnection != nil {
 			guildSession.VoiceConnection.Close()
 		}
+	}
+
+	err = client.Disconnect()
+	if err != nil {
+		log.Panic(err)
 	}
 
 	gameStatusQuitChannel <- true

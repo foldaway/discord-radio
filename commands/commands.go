@@ -7,17 +7,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/andersfylling/disgord"
 	"github.com/bottleneckco/discord-radio/models"
-	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"google.golang.org/api/googleapi/transport"
 	youtube "google.golang.org/api/youtube/v3"
 )
 
 // CommandsMap a map of all the command handlers
-var CommandsMap = make(map[string]func(*discordgo.Session, *discordgo.MessageCreate))
+var CommandsMap = make(map[string]func(disgord.Session, *disgord.MessageCreate))
 
-func newGuildSession(guildID string) models.GuildSession {
+func newGuildSession(guildID disgord.Snowflake) models.GuildSession {
 	return models.GuildSession{
 		GuildID: guildID,
 		Mutex:   sync.Mutex{},
@@ -29,9 +29,9 @@ func newGuildSession(guildID string) models.GuildSession {
 }
 
 // GuildSessionMap a map of all the guild sessions
-var GuildSessionMap = make(map[string]*models.GuildSession)
+var GuildSessionMap = make(map[disgord.Snowflake]*models.GuildSession)
 
-func safeGetGuildSession(guildID string) *models.GuildSession {
+func safeGetGuildSession(guildID disgord.Snowflake) *models.GuildSession {
 	if session, ok := GuildSessionMap[guildID]; ok {
 		return session
 	}
@@ -67,7 +67,7 @@ func init() {
 	CommandsMap["leave"] = leave
 }
 
-func deleteMessageDelayed(sess *discordgo.Session, msg *discordgo.Message) {
+func deleteMessageDelayed(s disgord.Session, msg *disgord.Message) {
 	time.Sleep(20 * time.Second)
-	sess.ChannelMessageDelete(msg.ChannelID, msg.ID)
+	s.DeleteFromDiscord(msg)
 }

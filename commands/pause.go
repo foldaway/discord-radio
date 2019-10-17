@@ -3,16 +3,16 @@ package commands
 import (
 	"fmt"
 
+	"github.com/andersfylling/disgord"
 	"github.com/bottleneckco/discord-radio/models"
-	"github.com/bwmarrin/discordgo"
 )
 
-func pause(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guildSession := safeGetGuildSession(m.GuildID)
+func pause(s disgord.Session, m *disgord.MessageCreate) {
+	guildSession := safeGetGuildSession(m.Message.GuildID)
 	if !guildSession.MusicPlayer.IsPlaying {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s nothing to pause", m.Author.Mention()))
+		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s nothing to pause", m.Message.Author.Mention()))
 		return
 	}
 	guildSession.MusicPlayer.Control <- models.MusicPlayerActionPause
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s paused", m.Author.Mention()))
+	s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s paused", m.Message.Author.Mention()))
 }

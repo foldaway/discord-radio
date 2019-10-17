@@ -3,12 +3,12 @@ package util
 import (
 	"errors"
 
-	"github.com/bwmarrin/discordgo"
+	"github.com/andersfylling/disgord"
 )
 
 // FindUserVoiceState find the voice state of a user
-func FindUserVoiceState(session *discordgo.Session, guildID string, userid string) (*discordgo.VoiceState, error) {
-	guild, err := session.Guild(guildID)
+func FindUserVoiceState(session disgord.Session, guildID, userid disgord.Snowflake) (*disgord.VoiceState, error) {
+	guild, err := session.GetGuild(guildID)
 	if err != nil {
 		return nil, err
 	}
@@ -21,9 +21,9 @@ func FindUserVoiceState(session *discordgo.Session, guildID string, userid strin
 }
 
 // GetUsersInVoiceChannel get users in a voice channel
-func GetUsersInVoiceChannel(session *discordgo.Session, guildID, channelID string) ([]*discordgo.VoiceState, error) {
-	var results []*discordgo.VoiceState
-	guild, err := session.Guild(guildID)
+func GetUsersInVoiceChannel(session disgord.Session, guildID, channelID disgord.Snowflake) ([]*disgord.VoiceState, error) {
+	var results []*disgord.VoiceState
+	guild, err := session.GetGuild(guildID)
 	if err != nil {
 		return results, err
 	}

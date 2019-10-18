@@ -12,12 +12,10 @@ import (
 	"github.com/andersfylling/disgord"
 	"github.com/bottleneckco/discord-radio/commands"
 	"github.com/bottleneckco/discord-radio/models"
-	"github.com/bottleneckco/discord-radio/util"
+	"github.com/bottleneckco/discord-radio/vscache"
 	"github.com/evalphobia/google-tts-go/googletts"
 	"github.com/joho/godotenv"
 )
-
-var userVoiceStateCache = make(map[disgord.Snowflake]disgord.VoiceState)
 
 func main() {
 	godotenv.Load()
@@ -97,22 +95,15 @@ func main() {
 		}
 	})
 
+	client.Ready(func() {
+		vscache.PreloadGuilds(client)
+	})
+
+	client.On(disgord.EvtVoiceStateUpdate, vscache.HandleVSU)
+
 	client.On(disgord.EvtVoiceStateUpdate, func(s disgord.Session, vsu *disgord.VoiceStateUpdate) {
-		// Populate all voice states
-		voiceChannelUsers, err := util.GetUsersInVoiceChannel(s, vsu.GuildID, vsu.ChannelID)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		for _, user := range voiceChannelUsers {
-			if _, isExist := userVoiceStateCache[user.UserID]; !isExist {
-				userVoiceStateCache[user.UserID] = *user
-			}
-		}
-
-		previousVoiceState, hasPreviousVoiceState := userVoiceStateCache[vsu.UserID]
-		userVoiceStateCache[vsu.UserID] = *vsu.VoiceState
+		voiceStateCache, isCached := vscache.FindUserVoiceState(vsu.UserID)
+		hasPreviousVoiceState := isCached && voiceStateCache.Previous != nil
 		guildSession, ok := commands.GuildSessionMap[vsu.GuildID]
 
 		if !ok || guildSession.VoiceConnection == nil {
@@ -120,11 +111,22 @@ func main() {
 			return
 		}
 
+		botUser, err := client.GetCurrentUser()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		if vsu.UserID == botUser.ID {
+			guildSession.VoiceChannelID = vsu.ChannelID
+			log.Println("[VSU] Updated internal cache of GuildSession.VoiceChannelID")
+		}
+
 		if hasPreviousVoiceState &&
-			(previousVoiceState.Deaf != vsu.Deaf ||
-				previousVoiceState.Mute != vsu.Mute ||
-				previousVoiceState.SelfDeaf != vsu.SelfDeaf ||
-				previousVoiceState.SelfMute != vsu.SelfMute) {
+			(voiceStateCache.Previous.Deaf != vsu.Deaf ||
+				voiceStateCache.Previous.Mute != vsu.Mute ||
+				voiceStateCache.Previous.SelfDeaf != vsu.SelfDeaf ||
+				voiceStateCache.Previous.SelfMute != vsu.SelfMute) {
 			log.Println("[VSU] Not handling, it's only a deaf/mute state change")
 			return
 		}
@@ -140,11 +142,14 @@ func main() {
 			username = guildMember.User.Username
 		}
 		// userVoiceState, err := util.FindUserVoiceState(s, vsu.UserID)
-		if hasPreviousVoiceState && previousVoiceState.ChannelID != vsu.ChannelID && vsu.ChannelID != guildSession.VoiceChannelID {
+		if hasPreviousVoiceState && voiceStateCache.Previous.ChannelID != vsu.ChannelID && vsu.ChannelID != guildSession.VoiceChannelID {
 			// User left this bot's channel
 			ttsMsg = fmt.Sprintf("Goodbye, %s", username)
+			log.Printf("[VSU] User '%s' left channel '%s'\n", vsu.Member.Nick, vsu.ChannelID)
 		} else if guildSession.VoiceChannelID == vsu.ChannelID { // User joined this channel
 			ttsMsg = fmt.Sprintf("Welcome, %s", username)
+		} else if hasPreviousVoiceState && voiceStateCache.Previous.ChannelID != vsu.ChannelID {
+			log.Printf("[VSU] User '%s' joined channel '%s'\n", vsu.Member.Nick, vsu.ChannelID)
 		}
 		if len(ttsMsg) > 0 {
 			url, _ := googletts.GetTTSURL(ttsMsg, "en")
@@ -160,11 +165,7 @@ func main() {
 			}
 		}
 
-		guildSessionVoiceChannelUsers, err := util.GetUsersInVoiceChannel(s, vsu.GuildID, guildSession.VoiceChannelID)
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		guildSessionVoiceChannelUsers := vscache.GetUsersInVoiceChannel(vsu.GuildID, guildSession.VoiceChannelID)
 
 		if len(guildSessionVoiceChannelUsers) == 1 {
 			// Only bot left

@@ -2,19 +2,21 @@ package commands
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/andersfylling/disgord"
-	"github.com/bottleneckco/discord-radio/util"
+	"github.com/bottleneckco/discord-radio/vscache"
 )
 
 func leave(s disgord.Session, m *disgord.MessageCreate) {
 	if guildSession, ok := GuildSessionMap[m.Message.GuildID]; ok {
-		voiceState, err := util.FindUserVoiceState(s, m.Message.GuildID, m.Message.Author.ID)
-		if err != nil {
+		voiceStateCache, ok := vscache.FindUserVoiceState(m.Message.Author.ID)
+		if !ok {
+			log.Println("No voice state cached")
 			s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s you are not in a voice channel", m.Message.Author.Mention()))
 			return
 		}
-		channel, err := s.GetChannel(voiceState.ChannelID)
+		channel, err := s.GetChannel(voiceStateCache.Current.ChannelID)
 		if err != nil {
 			s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s error occurred: %s", m.Message.Author.Mention(), err))
 			return

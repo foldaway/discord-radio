@@ -7,7 +7,7 @@ import (
 	"os/exec"
 
 	"github.com/andersfylling/disgord"
-	"github.com/bottleneckco/discord-radio/util"
+	"github.com/bottleneckco/discord-radio/vscache"
 	"github.com/evalphobia/google-tts-go/googletts"
 )
 
@@ -19,20 +19,20 @@ func join(s disgord.Session, m *disgord.MessageCreate) {
 
 func voiceChannelInit(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := safeGetGuildSession(m.Message.GuildID)
-	voiceState, err := util.FindUserVoiceState(s, m.Message.GuildID, m.Message.Author.ID)
-	if err != nil {
-		log.Println(err)
+	voiceStateCache, ok := vscache.FindUserVoiceState(m.Message.Author.ID)
+	if !ok {
+		log.Println("No voice state cached")
 		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s you are not in a voice channel", m.Message.Author.Mention()))
 		return
 	}
-	channel, err := s.GetChannel(voiceState.ChannelID)
+	channel, err := s.GetChannel(voiceStateCache.Current.ChannelID)
 	if err != nil {
 		log.Println(err)
 		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s error occurred: %s", m.Message.Author.Mention(), err))
 		return
 	}
 
-	voiceChannel, err := s.VoiceConnect(m.Message.GuildID, voiceState.ChannelID)
+	voiceChannel, err := s.VoiceConnect(m.Message.GuildID, voiceStateCache.Current.ChannelID)
 
 	if err != nil {
 		log.Println(err)

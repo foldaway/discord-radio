@@ -51,7 +51,7 @@ func main() {
 									continue
 								}
 								song := guildSession.Queue[0]
-								sb.WriteString(fmt.Sprintf("[%s] %s (%s) | ", util.GenerateAcronym(guild.Name), song.Title, song.ChannelTitle))
+								sb.WriteString(fmt.Sprintf("[%s] (1 of %d) %s | ", util.GenerateAcronym(guild.Name), len(guildSession.Queue), song.Title))
 							}
 						}
 						client.UpdateStatusString(sb.String())

@@ -17,7 +17,6 @@ var (
 		"1080p",
 		"720p",
 	}
-	ttsParenthesisRegex = regexp.MustCompile(`(\(.+?\)|\[.+?\])`)
 	ttsBannedWordsRegex = regexp.MustCompile(fmt.Sprintf("(?i)(%s)", strings.Join(ttsBannedWords, "|")))
 )
 
@@ -25,11 +24,7 @@ var (
 func SanitiseSongTitleTTS(title string) string {
 	return ttsBannedWordsRegex.
 		ReplaceAllString(
-			ttsParenthesisRegex.
-				ReplaceAllString(
-					title,
-					"",
-				),
+			title,
 			"",
 		)
 }

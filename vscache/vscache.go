@@ -68,3 +68,14 @@ func GetUsersInVoiceChannel(guildID, channelID disgord.Snowflake) []*VoiceStateC
 	}
 	return results
 }
+
+// ActiveVSCount count number of active voice sessions
+func ActiveVSCount() int {
+	var count int
+	for _, vs := range userVoiceStateCache {
+		if vs.Current != nil {
+			count++
+		}
+	}
+	return count
+}

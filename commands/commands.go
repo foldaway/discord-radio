@@ -65,6 +65,7 @@ func init() {
 	CommandsMap["resume"] = resume
 	CommandsMap["help"] = help
 	CommandsMap["leave"] = leave
+	CommandsMap["status"] = status
 }
 
 func deleteMessageDelayed(s disgord.Session, msg *disgord.Message) {

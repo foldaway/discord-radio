@@ -12,6 +12,7 @@ import (
 	"github.com/andersfylling/disgord"
 	"github.com/bottleneckco/discord-radio/commands"
 	"github.com/bottleneckco/discord-radio/models"
+	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bottleneckco/discord-radio/vscache"
 	"github.com/evalphobia/google-tts-go/googletts"
 	"github.com/joho/godotenv"
@@ -50,7 +51,7 @@ func main() {
 									continue
 								}
 								song := guildSession.Queue[0]
-								sb.WriteString(fmt.Sprintf("[%s] %s (%s) | ", guild.Name, song.Title, song.ChannelTitle))
+								sb.WriteString(fmt.Sprintf("[%s] %s (%s) | ", util.GenerateAcronym(guild.Name), song.Title, song.ChannelTitle))
 							}
 						}
 						client.UpdateStatusString(sb.String())

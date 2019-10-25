@@ -63,7 +63,7 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 			s.SendMsg(m.Message.ChannelID, fmt.Sprintf("Error occurred: %s", err))
 			return
 		}
-		guildSession.Mutex.Lock()
+		guildSession.RWMutex.Lock()
 		for _, youtubeListing := range youtubeListings.Items {
 			guildSession.Queue = append(guildSession.Queue, models.QueueItem{
 				Title:        youtubeListing.Snippet.Title,
@@ -73,7 +73,7 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 				Thumbnail:    youtubeListing.Snippet.Thumbnails.Default.Url,
 			})
 		}
-		guildSession.Mutex.Unlock()
+		guildSession.RWMutex.Unlock()
 		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s enqueued %d videos`\n", m.Message.Author.Mention(), len(videoIDs)))
 	} else {
 		maxResults, _ := strconv.ParseInt(os.Getenv("BOT_NUM_RESULTS"), 10, 64)
@@ -112,7 +112,7 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 				return
 			} else if err == nil {
 				chosenItem := tempSearchResultsCache[mm.Message.Author.ID][choice-1]
-				guildSession.Mutex.Lock()
+				guildSession.RWMutex.Lock()
 				guildSession.Queue = append(guildSession.Queue, models.QueueItem{
 					Title:        html.UnescapeString(chosenItem.Snippet.Title),
 					ChannelTitle: chosenItem.Snippet.ChannelTitle,
@@ -120,7 +120,7 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 					VideoID:      chosenItem.Id.VideoId,
 					Thumbnail:    chosenItem.Snippet.Thumbnails.Default.Url,
 				})
-				guildSession.Mutex.Unlock()
+				guildSession.RWMutex.Unlock()
 				ss.SendMsg(mm.Message.ChannelID, &disgord.CreateMessageParams{
 					Embed: &disgord.Embed{
 						Author: &disgord.EmbedAuthor{

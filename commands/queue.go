@@ -9,10 +9,10 @@ import (
 
 func queue(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := safeGetGuildSession(m.Message.GuildID)
-	guildSession.Mutex.Lock()
+	guildSession.RWMutex.RLock()
 	if len(guildSession.Queue) == 0 {
 		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s nothing in the queue.", m.Message.Author.Mention()))
-		guildSession.Mutex.Unlock()
+		guildSession.RWMutex.RUnlock()
 		return
 	}
 	var b strings.Builder
@@ -22,6 +22,6 @@ func queue(s disgord.Session, m *disgord.MessageCreate) {
 	for index, queueItem := range guildSession.Queue[1:] {
 		b.WriteString(fmt.Sprintf("`️%d.` **%s**   ⬆️%s   ⏫%s\n", index+2, queueItem.Title, queueItem.ChannelTitle, queueItem.Author))
 	}
-	guildSession.Mutex.Unlock()
+	guildSession.RWMutex.RUnlock()
 	s.SendMsg(m.Message.ChannelID, b.String())
 }

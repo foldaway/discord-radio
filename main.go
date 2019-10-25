@@ -175,9 +175,9 @@ func main() {
 			var tempVoiceConn = guildSession.VoiceConnection
 			guildSession.VoiceConnection = nil
 
-			guildSession.Mutex.Lock()
+			guildSession.RWMutex.Lock()
 			guildSession.Queue = guildSession.Queue[0:0]
-			guildSession.Mutex.Unlock()
+			guildSession.RWMutex.Unlock()
 			guildSession.MusicPlayer.Close <- struct{}{}
 			tempVoiceConn.Close()
 		}

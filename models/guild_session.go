@@ -46,7 +46,7 @@ const (
 // GuildSession represents a guild voice session
 type GuildSession struct {
 	GuildID                     disgord.Snowflake
-	Mutex                       sync.Mutex
+	RWMutex                     sync.RWMutex
 	Queue                       []QueueItem // current item = index 0
 	VoiceConnection             disgord.VoiceConnection
 	VoiceChannelID              disgord.Snowflake
@@ -78,13 +78,13 @@ func (guildSession *GuildSession) Loop() {
 				continue
 			}
 			queueItem := ConvertYouTubePlaylistItem(playlistItem)
-			guildSession.Mutex.Lock()
+			guildSession.RWMutex.Lock()
 			guildSession.Queue = append(guildSession.Queue, queueItem)
-			guildSession.Mutex.Unlock()
+			guildSession.RWMutex.Unlock()
 		}
-		guildSession.Mutex.Lock()
+		guildSession.RWMutex.RLock()
 		var song = guildSession.Queue[0]
-		guildSession.Mutex.Unlock()
+		guildSession.RWMutex.RUnlock()
 
 		// Announce music title
 		songTitle := util.SanitiseSongTitleTTS(song.Title)
@@ -107,11 +107,11 @@ func (guildSession *GuildSession) Loop() {
 			volume = volumeConv
 		}
 		guildSession.PlayYouTube(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), volume)
-		guildSession.Mutex.Lock()
+		guildSession.RWMutex.Lock()
 		if len(guildSession.Queue) > 0 {
 			guildSession.Queue = guildSession.Queue[1:]
 		}
-		guildSession.Mutex.Unlock()
+		guildSession.RWMutex.Unlock()
 	}
 }
 

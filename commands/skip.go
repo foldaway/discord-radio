@@ -10,11 +10,14 @@ import (
 
 func skip(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := safeGetGuildSession(m.Message.GuildID)
-	guildSession.Mutex.Lock()
+	guildSession.RWMutex.RLock()
 	if len(guildSession.Queue) == 0 || !guildSession.MusicPlayer.IsPlaying {
 		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s nothing to skip", m.Message.Author.Mention()))
+		guildSession.RWMutex.RUnlock()
 		return
 	}
+	guildSession.RWMutex.RUnlock()
+	guildSession.RWMutex.Lock()
 	var skippedItem models.QueueItem
 	if len(m.Message.Content) == 0 {
 		// No args, skip current
@@ -28,11 +31,11 @@ func skip(s disgord.Session, m *disgord.MessageCreate) {
 			guildSession.Queue = append(guildSession.Queue[:choice-1], guildSession.Queue[choice:]...)
 		} else {
 			s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s invalid choice", m.Message.Author.Mention()))
-			guildSession.Mutex.Unlock()
+			guildSession.RWMutex.Unlock()
 			return
 		}
 	}
-	guildSession.Mutex.Unlock()
+	guildSession.RWMutex.Unlock()
 
 	s.SendMsg(m.Message.ChannelID, &disgord.CreateMessageParams{
 		Embed: &disgord.Embed{

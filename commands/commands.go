@@ -20,7 +20,7 @@ var CommandsMap = make(map[string]func(disgord.Session, *disgord.MessageCreate))
 func newGuildSession(guildID disgord.Snowflake) models.GuildSession {
 	return models.GuildSession{
 		GuildID: guildID,
-		Mutex:   sync.Mutex{},
+		RWMutex: sync.RWMutex{},
 		MusicPlayer: models.MusicPlayer{
 			Close:   make(chan struct{}),
 			Control: make(chan models.MusicPlayerAction),

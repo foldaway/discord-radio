@@ -21,7 +21,7 @@ func main() {
 	godotenv.Load()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	client := disgord.New(&disgord.Config{
+	client := disgord.New(disgord.Config{
 		BotToken: os.Getenv("DISCORD_TOKEN"),
 		Logger:   disgord.DefaultLogger(false),
 	})
@@ -37,7 +37,7 @@ func main() {
 				// Update music status
 				if time.Now().Second()%20 == 0 {
 					if len(commands.GuildSessionMap) == 0 {
-						client.UpdateStatus(&disgord.UpdateStatusCommand{
+						client.UpdateStatus(&disgord.UpdateStatusPayload{
 							AFK: true,
 						})
 					} else {
@@ -170,7 +170,7 @@ func main() {
 		if len(guildSessionVoiceChannelUsers) == 1 {
 			// Only bot left
 			log.Println("Leaving, only me left in voice channel.")
-			s.UpdateStatus(&disgord.UpdateStatusCommand{AFK: true})
+			s.UpdateStatus(&disgord.UpdateStatusPayload{AFK: true})
 			var tempVoiceConn = guildSession.VoiceConnection
 			guildSession.VoiceConnection = nil
 

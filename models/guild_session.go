@@ -117,36 +117,36 @@ func (guildSession *GuildSession) Loop() {
 
 // Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go
 
-func createYTPipe(youtubeURL string) (*bufio.Reader, error) {
+func createYTPipe(youtubeURL string) (*bufio.Reader, *os.Process, error) {
 	args := []string{"-q", "-f", "bestaudio[abr>=130],best", "-o", "-", youtubeURL}
 	ytdl := exec.Command("youtube-dl", args...)
 	ytdl.Stderr = os.Stderr
 	ytdlout, err := ytdl.StdoutPipe()
 	if err != nil {
 		log.Println("ytdl StdoutPipe err:", err)
-		return nil, err
+		return nil, ytdl.Process, err
 	}
 	err = ytdl.Start()
 	if err != nil {
 		log.Println("ytdl Start err:", err)
-		return nil, err
+		return nil, ytdl.Process, err
 	}
 	defer func() {
 		go ytdl.Wait()
 	}()
 	ytdlbuf := bufio.NewReaderSize(ytdlout, 16384)
-	return ytdlbuf, nil
+	return ytdlbuf, ytdl.Process, nil
 }
 
 // PlayYouTube play a YouTube video
 func (guildSession *GuildSession) PlayYouTube(youtubeURL string, volume float64) error {
 	log.Printf("[PLAYER] Playing YouTube '%s'\n", youtubeURL)
 
-	ytPipe, err := createYTPipe(youtubeURL)
+	ytPipe, ytProc, err := createYTPipe(youtubeURL)
 	if err != nil {
 		return err
 	}
-	return guildSession.play(ytPipe, volume)
+	return guildSession.play(ytPipe, ytProc, volume)
 }
 
 // PlayURL play a URL to an audio/video file
@@ -158,9 +158,9 @@ func (guildSession *GuildSession) PlayURL(url string, volume float64) error {
 		return err
 	}
 
-	return guildSession.play(bufio.NewReader(resp.Body), volume)
+	return guildSession.play(bufio.NewReader(resp.Body), nil, volume)
 }
-func (guildSession *GuildSession) play(pipe *bufio.Reader, volume float64) error {
+func (guildSession *GuildSession) play(pipe *bufio.Reader, proc *os.Process, volume float64) error {
 	guildSession.MusicPlayer.IsPlaying = true
 
 	defer func() {
@@ -218,6 +218,11 @@ func (guildSession *GuildSession) play(pipe *bufio.Reader, volume float64) error
 		if guildSession.VoiceConnection != nil {
 			guildSession.VoiceConnection.StopSpeaking()
 		}
+		if proc != nil {
+			proc.Kill()
+		}
+		dca.Process.Kill()
+		ffmpeg.Process.Kill()
 	}()
 
 	guildSession.MusicPlayer.StartTime = time.Now()

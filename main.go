@@ -174,13 +174,13 @@ func main() {
 			log.Println("Leaving, only me left in voice channel.")
 			s.UpdateStatus(&disgord.UpdateStatusPayload{AFK: true})
 			var tempVoiceConn = guildSession.VoiceConnection
-			guildSession.VoiceConnection = nil
 
 			guildSession.RWMutex.Lock()
 			guildSession.Queue = guildSession.Queue[0:0]
 			guildSession.RWMutex.Unlock()
 			guildSession.MusicPlayer.Close <- struct{}{}
 			tempVoiceConn.Close()
+			guildSession.VoiceConnection = nil
 		}
 	})
 

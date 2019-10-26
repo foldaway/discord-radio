@@ -121,11 +121,12 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 					Thumbnail:    chosenItem.Snippet.Thumbnails.Default.Url,
 				})
 				guildSession.RWMutex.Unlock()
+				avatarURL, _ := m.Message.Author.AvatarURL(32, false)
 				ss.SendMsg(mm.Message.ChannelID, &disgord.CreateMessageParams{
 					Embed: &disgord.Embed{
 						Author: &disgord.EmbedAuthor{
 							Name:    "Added to queue",
-							IconURL: fmt.Sprintf("https://cdn.discordapp.com/embed/avatars/%d.png?size=%d", m.Message.Author.Discriminator%5, 32),
+							IconURL: avatarURL,
 						},
 						Title: html.UnescapeString(chosenItem.Snippet.Title),
 						Thumbnail: &disgord.EmbedThumbnail{

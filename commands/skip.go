@@ -37,11 +37,13 @@ func skip(s disgord.Session, m *disgord.MessageCreate) {
 	}
 	guildSession.RWMutex.Unlock()
 
+	avatarURL, _ := m.Message.Author.AvatarURL(32, false)
+
 	s.SendMsg(m.Message.ChannelID, &disgord.CreateMessageParams{
 		Embed: &disgord.Embed{
 			Author: &disgord.EmbedAuthor{
 				Name:    "Removed from queue",
-				IconURL: fmt.Sprintf("https://cdn.discordapp.com/embed/avatars/%d.png?size=%d", m.Message.Author.Discriminator%5, 32),
+				IconURL: avatarURL,
 			},
 			Title: skippedItem.Title,
 			Thumbnail: &disgord.EmbedThumbnail{

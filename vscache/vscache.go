@@ -26,6 +26,7 @@ func upsertVoiceState(userID disgord.Snowflake, vs *disgord.VoiceState) {
 
 // HandleVSU handle VoiceStateUpdate event
 func HandleVSU(s disgord.Session, vsu *disgord.VoiceStateUpdate) {
+	log.Println("HandleVSU")
 	upsertVoiceState(vsu.UserID, vsu.VoiceState)
 }
 

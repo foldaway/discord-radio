@@ -167,6 +167,7 @@ func main() {
 		}
 
 		guildSessionVoiceChannelUsers := vscache.GetUsersInVoiceChannel(vsu.GuildID, guildSession.VoiceChannelID)
+		log.Printf("[VSU] Currently left %d players in voice channel\n", len(guildSessionVoiceChannelUsers))
 
 		if len(guildSessionVoiceChannelUsers) == 1 {
 			// Only bot left

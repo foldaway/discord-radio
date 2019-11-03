@@ -167,7 +167,26 @@ func (guildSession *GuildSession) play(pipe *bufio.Reader, proc *os.Process, vol
 		guildSession.MusicPlayer.IsPlaying = false
 	}()
 
-	ffmpeg := exec.Command("ffmpeg", "-hide_banner", "-nostats", "-loglevel", "error", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "-af", fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=0.95,volume=%f", volume), "-b:a", "256k", "pipe:1")
+	ffmpeg := exec.Command(
+		"ffmpeg",
+		"-hide_banner",
+		"-nostats",
+		"-loglevel",
+		"error",
+		"-i",
+		"pipe:0",
+		"-f",
+		"s16le",
+		"-ar",
+		"48000",
+		"-ac",
+		"2",
+		"-af",
+		fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=%f", volume),
+		"-b:a",
+		"256k",
+		"pipe:1",
+	)
 	ffmpeg.Stdin = pipe
 	ffmpeg.Stderr = os.Stderr
 	ffmpegout, err := ffmpeg.StdoutPipe()

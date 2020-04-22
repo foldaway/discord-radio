@@ -26,6 +26,9 @@ func main() {
 	client := disgord.New(disgord.Config{
 		BotToken: os.Getenv("DISCORD_TOKEN"),
 		Logger:   disgord.DefaultLogger(false),
+		CacheConfig: &disgord.CacheConfig{
+			DisableVoiceStateCaching: true,
+		},
 	})
 
 	gameStatusQuitChannel := make(chan bool)

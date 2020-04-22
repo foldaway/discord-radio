@@ -1,0 +1,59 @@
+name: Go
+on:
+  push:
+      tags:
+      - 'v*'
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+
+    - name: Use Node.js 12.x
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12.x
+
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
+    
+    - name: Extract repository name
+      shell: bash
+      run: echo "##[set-output name=repo;]$(echo ${GITHUB_REPOSITORY##*/})"
+      id: extract_repo
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+
+    - name: Get dependencies
+      run: |
+        go mod download
+
+    - name: Build
+      run: |
+        GOOS=linux GOARCH=amd64 go build -v -o ${GITHUB_REPOSITORY##*/}-linux-x64 ./cmd/...
+        GOOS=linux GOARCH=arm GOARM=5 go build -v -o ${GITHUB_REPOSITORY##*/}-linux-armv5 ./cmd/...
+        GOOS=linux GOARCH=mipsle go build -v -o ${GITHUB_REPOSITORY##*/}-linux-mipsle ./cmd/...
+        GOOS=darwin GOARCH=amd64 go build -v -o ${GITHUB_REPOSITORY##*/}-darwin-x64 ./cmd/...
+        GOOS=windows GOARCH=amd64 go build -v -o ${GITHUB_REPOSITORY##*/}-win32-x64 ./cmd/...		
+        GOOS=windows GOARCH=386 go build -v -o ${GITHUB_REPOSITORY##*/}-win32-ia32 ./cmd/...
+
+    - name: Generate changelog
+      run: |
+        npm install -g conventional-changelog-cli
+        conventional-changelog -p angular -i CHANGELOG.md -s -r 0 -v
+
+    - uses: ncipollo/release-action@v1
+      with:
+        artifacts: ${{ steps.extract_repo.outputs.repo }}-*
+        bodyFile: "CHANGELOG.md"
+        token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,5 @@
 # discord-radio
-[![CircleCI](https://circleci.com/gh/bottleneckco/discord-radio/tree/master.svg?style=svg)](https://circleci.com/gh/bottleneckco/discord-radio/tree/master)
+![Go](https://github.com/bottleneckco/discord-radio/workflows/Go/badge.svg)
 Discord music bot, written in Golang
 
 ### Requirements

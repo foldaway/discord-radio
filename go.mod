@@ -2,14 +2,12 @@ module github.com/bottleneckco/discord-radio
 
 require (
 	github.com/andersfylling/disgord v0.16.5
-	github.com/andersfylling/snowflake/v3 v3.0.2 // indirect
 	github.com/chrisport/go-lang-detector v0.0.0-20180912070833-7e13c74bc6e3
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/evalphobia/google-tts-go v0.3.0
 	github.com/joho/godotenv v1.3.0
 	github.com/klauspost/compress v1.10.4 // indirect
-	github.com/masatana/go-textdistance v0.0.0-20171214133840-59954f2a9d67
-	github.com/sergi/go-diff v1.0.0 // indirect
+	github.com/masatana/go-textdistance v0.0.0-20191005053614-738b0edac985
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
 	go.uber.org/zap v1.14.1 // indirect
 	golang.org/x/crypto v0.0.0-20200420201142-3c4aac89819a // indirect

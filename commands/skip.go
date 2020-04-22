@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/andersfylling/disgord"
+	"github.com/bottleneckco/discord-radio/ctx"
 	"github.com/bottleneckco/discord-radio/models"
 )
 
@@ -12,7 +13,7 @@ func skip(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := safeGetGuildSession(m.Message.GuildID)
 	guildSession.RWMutex.RLock()
 	if len(guildSession.Queue) == 0 || !guildSession.MusicPlayer.IsPlaying {
-		s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s nothing to skip", m.Message.Author.Mention()))
+		s.SendMsg(ctx.Ctx, m.Message.ChannelID, fmt.Sprintf("%s nothing to skip", m.Message.Author.Mention()))
 		guildSession.RWMutex.RUnlock()
 		return
 	}
@@ -30,7 +31,7 @@ func skip(s disgord.Session, m *disgord.MessageCreate) {
 			skippedItem = guildSession.Queue[choice-1]
 			guildSession.Queue = append(guildSession.Queue[:choice-1], guildSession.Queue[choice:]...)
 		} else {
-			s.SendMsg(m.Message.ChannelID, fmt.Sprintf("%s invalid choice", m.Message.Author.Mention()))
+			s.SendMsg(ctx.Ctx, m.Message.ChannelID, fmt.Sprintf("%s invalid choice", m.Message.Author.Mention()))
 			guildSession.RWMutex.Unlock()
 			return
 		}
@@ -39,7 +40,7 @@ func skip(s disgord.Session, m *disgord.MessageCreate) {
 
 	avatarURL, _ := m.Message.Author.AvatarURL(32, false)
 
-	s.SendMsg(m.Message.ChannelID, &disgord.CreateMessageParams{
+	s.SendMsg(ctx.Ctx, m.Message.ChannelID, &disgord.CreateMessageParams{
 		Embed: &disgord.Embed{
 			Author: &disgord.EmbedAuthor{
 				Name:    "Removed from queue",

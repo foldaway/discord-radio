@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/andersfylling/disgord"
+	"github.com/bottleneckco/discord-radio/ctx"
 	"github.com/bottleneckco/discord-radio/models"
 	"github.com/joho/godotenv"
 	"google.golang.org/api/googleapi/transport"
@@ -70,5 +71,5 @@ func init() {
 
 func deleteMessageDelayed(s disgord.Session, msg *disgord.Message) {
 	time.Sleep(20 * time.Second)
-	s.DeleteFromDiscord(msg)
+	s.DeleteFromDiscord(ctx.Ctx, msg)
 }

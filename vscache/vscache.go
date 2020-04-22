@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/andersfylling/disgord"
+	"github.com/bottleneckco/discord-radio/ctx"
 )
 
 // VoiceStateCache a data structure used to cache the VoiceState
@@ -32,14 +33,14 @@ func HandleVSU(s disgord.Session, vsu *disgord.VoiceStateUpdate) {
 
 // PreloadGuilds preload guilds
 func PreloadGuilds(s *disgord.Client) {
-	guilds, err := s.GetCurrentUserGuilds(&disgord.GetCurrentUserGuildsParams{})
+	guilds, err := s.GetCurrentUserGuilds(ctx.Ctx, &disgord.GetCurrentUserGuildsParams{})
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	log.Printf("Preloading %d guilds\n", len(guilds))
 	for _, partialGuild := range guilds {
-		guild, err := s.GetGuild(partialGuild.ID)
+		guild, err := s.GetGuild(ctx.Ctx, partialGuild.ID)
 		if err != nil {
 			log.Println(err)
 			continue

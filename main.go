@@ -11,6 +11,7 @@ import (
 
 	"github.com/andersfylling/disgord"
 	"github.com/bottleneckco/discord-radio/commands"
+	"github.com/bottleneckco/discord-radio/ctx"
 	"github.com/bottleneckco/discord-radio/models"
 	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bottleneckco/discord-radio/vscache"
@@ -45,7 +46,7 @@ func main() {
 						var sb strings.Builder
 						for _, guildSession := range commands.GuildSessionMap {
 							if len(guildSession.Queue) > 0 && guildSession.MusicPlayer.IsPlaying {
-								guild, err := client.GetGuild(guildSession.GuildID)
+								guild, err := client.GetGuild(ctx.Ctx, guildSession.GuildID)
 								if err != nil {
 									log.Println(err)
 									continue
@@ -64,7 +65,7 @@ func main() {
 
 	client.On(disgord.EvtMessageCreate, func(s disgord.Session, m *disgord.MessageCreate) {
 		// Ignore all messages created by the bot itself
-		botUser, err := client.GetCurrentUser()
+		botUser, err := client.GetCurrentUser(ctx.Ctx)
 		if err != nil {
 			log.Println(err)
 			return
@@ -112,7 +113,7 @@ func main() {
 			return
 		}
 
-		botUser, err := client.GetCurrentUser()
+		botUser, err := client.GetCurrentUser(ctx.Ctx)
 		if err != nil {
 			log.Println(err)
 			return
@@ -133,7 +134,7 @@ func main() {
 		}
 
 		var ttsMsg string
-		guildMember, err := client.GetMember(vsu.GuildID, vsu.UserID)
+		guildMember, err := client.GetMember(ctx.Ctx, vsu.GuildID, vsu.UserID)
 		if err != nil {
 			log.Println(err)
 			return
@@ -184,7 +185,7 @@ func main() {
 		}
 	})
 
-	err := client.Connect()
+	err := client.Connect(ctx.Ctx)
 	if err != nil {
 		log.Panic(err)
 	}

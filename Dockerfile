@@ -13,4 +13,4 @@ RUN chmod a+rx /usr/local/bin/youtube-dl
 RUN chmod +x /usr/local/bin/discord-radio
 COPY --from=server_builder /go/bin/dca /usr/local/bin/dca
 WORKDIR /root/
-CMD "/usr/local/bin/discord-radio"
+ENTRYPOINT ["discord-radio"]

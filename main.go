@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -16,6 +17,7 @@ import (
 	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bottleneckco/discord-radio/vscache"
 	"github.com/evalphobia/google-tts-go/googletts"
+	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
 )
 
@@ -30,6 +32,16 @@ func main() {
 			DisableVoiceStateCaching: true,
 		},
 	})
+
+	var scheduler = gocron.NewScheduler(time.Local)
+	scheduler.Every(1).Day().Do(func() {
+		log.Println("Clearing youtube-dl cache dir")
+		var ytdl = exec.Command("youtube-dl", "--rm-cache-dir")
+		ytdl.Stdout = os.Stdout
+		ytdl.Stderr = os.Stderr
+		ytdl.Run()
+	})
+	scheduler.StartImmediately()
 
 	gameStatusQuitChannel := make(chan bool)
 

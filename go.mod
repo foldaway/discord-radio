@@ -5,6 +5,7 @@ require (
 	github.com/chrisport/go-lang-detector v0.0.0-20180912070833-7e13c74bc6e3
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/evalphobia/google-tts-go v0.3.0
+	github.com/go-co-op/gocron v0.1.1
 	github.com/joho/godotenv v1.3.0
 	github.com/klauspost/compress v1.10.4 // indirect
 	github.com/masatana/go-textdistance v0.0.0-20191005053614-738b0edac985

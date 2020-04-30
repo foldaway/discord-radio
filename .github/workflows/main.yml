@@ -50,7 +50,7 @@ jobs:
     - name: Generate changelog
       run: |
         npm install -g conventional-changelog-cli
-        conventional-changelog -p angular -i CHANGELOG.md -s -r 0 -v
+        conventional-changelog -p angular -i CHANGELOG.md -s -r 1 -v
 
     - uses: ncipollo/release-action@v1
       with:

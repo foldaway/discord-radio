@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"os/signal"
 	"strings"
 	"time"
@@ -31,13 +30,7 @@ func main() {
 	}
 
 	var scheduler = gocron.NewScheduler(time.Local)
-	scheduler.Every(1).Day().Do(func() {
-		log.Println("Clearing youtube-dl cache dir")
-		var ytdl = exec.Command("youtube-dl", "--rm-cache-dir")
-		ytdl.Stdout = os.Stdout
-		ytdl.Stderr = os.Stderr
-		ytdl.Run()
-	})
+
 	scheduler.Every(5).Seconds().Do(func() {
 		var sb strings.Builder
 		for _, guildSession := range commands.GuildSessionMap {
@@ -54,8 +47,6 @@ func main() {
 
 	})
 	scheduler.Start()
-
-	//gameStatusQuitChannel := make(chan bool)
 
 	session.AddHandler(func(s *discordgo.Session, event *discordgo.MessageCreate) {
 		log.Printf("[MESSAGE] %s: '%s'\n", event.Author.Username, event.Message.Content)

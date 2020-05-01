@@ -23,6 +23,13 @@ func voiceChannelInit(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var err error
 
 	userVoiceState, err = util.FindUserVoiceState(s, m.Message.Author.ID)
+	if err != nil {
+		log.Println(err)
+	}
+	if userVoiceState == nil {
+		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s you are not in a voice channel.", m.Message.Author.Mention()))
+		return
+	}
 
 	channel, err := s.Channel(userVoiceState.ChannelID)
 	if err != nil {

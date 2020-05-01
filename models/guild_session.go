@@ -46,6 +46,7 @@ const (
 // GuildSession represents a guild voice session
 type GuildSession struct {
 	GuildID                     string
+	GuildName                   string
 	RWMutex                     sync.RWMutex
 	Queue                       []QueueItem // current item = index 0
 	VoiceConnection             *discordgo.VoiceConnection

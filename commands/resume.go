@@ -8,7 +8,7 @@ import (
 )
 
 func resume(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guildSession := safeGetGuildSession(m.Message.GuildID)
+	guildSession := safeGetGuildSession(s, m.Message.GuildID)
 	if !guildSession.MusicPlayer.IsPlaying {
 		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s nothing to resume", m.Message.Author.Mention()))
 		return

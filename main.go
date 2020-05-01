@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/bottleneckco/discord-radio/commands"
+	"github.com/bottleneckco/discord-radio/models"
+	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bwmarrin/discordgo"
+	"github.com/evalphobia/google-tts-go/googletts"
 	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
 )
@@ -35,7 +38,22 @@ func main() {
 		ytdl.Stderr = os.Stderr
 		ytdl.Run()
 	})
-	scheduler.StartImmediately()
+	scheduler.Every(5).Seconds().Do(func() {
+		var sb strings.Builder
+		for _, guildSession := range commands.GuildSessionMap {
+			if len(guildSession.Queue) > 0 && guildSession.MusicPlayer.IsPlaying {
+				song := guildSession.Queue[0]
+				sb.WriteString(fmt.Sprintf("[%s] (1 of %d) %s | ", util.GenerateAcronym(guildSession.GuildName), len(guildSession.Queue), song.Title))
+			}
+		}
+		if sb.Len() > 0 {
+			session.UpdateStatus(0, sb.String())
+		} else {
+			session.UpdateStatus(1, "")
+		}
+
+	})
+	scheduler.Start()
 
 	//gameStatusQuitChannel := make(chan bool)
 
@@ -74,87 +92,88 @@ func main() {
 
 	})
 
-	// client.On(disgord.EvtVoiceStateUpdate, func(s disgord.Session, vsu *disgord.VoiceStateUpdate) {
-	// 	voiceStateCache, isCached := vscache.FindUserVoiceState(vsu.UserID)
-	// 	hasPreviousVoiceState := isCached && voiceStateCache.Previous != nil
-	// 	guildSession, ok := commands.GuildSessionMap[vsu.GuildID]
+	var voiceStateCache = make(map[string]discordgo.VoiceState)
 
-	// 	if !ok || guildSession.VoiceConnection == nil {
-	// 		log.Println("[VSU] Not handling, guild has no voice connection")
-	// 		return
-	// 	}
+	session.AddHandler(func(s *discordgo.Session, event *discordgo.VoiceStateUpdate) {
+		previousVoiceState, hasPreviousVoiceState := voiceStateCache[event.UserID]
+		guildSession, ok := commands.GuildSessionMap[event.GuildID]
 
-	// 	botUser, err := client.GetCurrentUser(ctx.Ctx)
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 		return
-	// 	}
+		if event.VoiceState != nil {
+			voiceStateCache[event.UserID] = *event.VoiceState
+		} else {
+			delete(voiceStateCache, event.UserID)
+		}
 
-	// 	if vsu.UserID == botUser.ID {
-	// 		guildSession.VoiceChannelID = vsu.ChannelID
-	// 		log.Println("[VSU] Updated internal cache of GuildSession.VoiceChannelID")
-	// 	}
+		if !ok || guildSession.VoiceConnection == nil {
+			log.Println("[VSU] Not handling, guild has no voice connection")
+			return
+		}
 
-	// 	if hasPreviousVoiceState &&
-	// 		(voiceStateCache.Previous.Deaf != vsu.Deaf ||
-	// 			voiceStateCache.Previous.Mute != vsu.Mute ||
-	// 			voiceStateCache.Previous.SelfDeaf != vsu.SelfDeaf ||
-	// 			voiceStateCache.Previous.SelfMute != vsu.SelfMute) {
-	// 		log.Println("[VSU] Not handling, it's only a deaf/mute state change")
-	// 		return
-	// 	}
+		if event.UserID == s.State.User.ID {
+			guildSession.VoiceChannelID = event.ChannelID
+			log.Println("[VSU] Updated internal cache of GuildSession.VoiceChannelID")
+		}
 
-	// 	var ttsMsg string
-	// 	guildMember, err := client.GetMember(ctx.Ctx, vsu.GuildID, vsu.UserID)
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 		return
-	// 	}
-	// 	username := guildMember.Nick
-	// 	if username == "" {
-	// 		username = guildMember.User.Username
-	// 	}
-	// 	// userVoiceState, err := util.FindUserVoiceState(s, vsu.UserID)
-	// 	if hasPreviousVoiceState && voiceStateCache.Previous.ChannelID != vsu.ChannelID && vsu.ChannelID != guildSession.VoiceChannelID {
-	// 		// User left this bot's channel
-	// 		ttsMsg = fmt.Sprintf("Goodbye, %s", username)
-	// 		log.Printf("[VSU] User '%s' left channel '%s'\n", vsu.Member.Nick, vsu.ChannelID)
-	// 	} else if guildSession.VoiceChannelID == vsu.ChannelID { // User joined this channel
-	// 		ttsMsg = fmt.Sprintf("Welcome, %s", username)
-	// 	} else if hasPreviousVoiceState && voiceStateCache.Previous.ChannelID != vsu.ChannelID {
-	// 		log.Printf("[VSU] User '%s' joined channel '%s'\n", vsu.Member.Nick, vsu.ChannelID)
-	// 	}
-	// 	if len(ttsMsg) > 0 {
-	// 		url, _ := googletts.GetTTSURL(ttsMsg, "en")
-	// 		var isSomethingPlaying = guildSession.MusicPlayer.IsPlaying
-	// 		if isSomethingPlaying {
-	// 			guildSession.MusicPlayer.Control <- models.MusicPlayerActionPause
-	// 		}
-	// 		guildSession.PlayURL(url, 0.5)
-	// 		if isSomethingPlaying {
-	// 			guildSession.MusicPlayer.Control <- models.MusicPlayerActionResume
-	// 			log.Println("[MAIN] Patching MusicPlayer IsPlaying=true")
-	// 			guildSession.MusicPlayer.IsPlaying = true
-	// 		}
-	// 	}
+		if hasPreviousVoiceState &&
+			(previousVoiceState.Deaf != event.Deaf ||
+				previousVoiceState.Mute != event.Mute ||
+				previousVoiceState.SelfDeaf != event.SelfDeaf ||
+				previousVoiceState.SelfMute != event.SelfMute) {
+			log.Println("[VSU] Not handling, it's only a deaf/mute state change")
+			return
+		}
 
-	// 	guildSessionVoiceChannelUsers := vscache.GetUsersInVoiceChannel(vsu.GuildID, guildSession.VoiceChannelID)
-	// 	log.Printf("[VSU] Currently left %d players in voice channel\n", len(guildSessionVoiceChannelUsers))
+		var ttsMsg string
+		guildMember, err := s.GuildMember(event.GuildID, event.UserID)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		username := guildMember.Nick
+		if username == "" {
+			username = guildMember.User.Username
+		}
+		// userVoiceState, err := util.FindUserVoiceState(s, vsu.UserID)
+		if hasPreviousVoiceState && previousVoiceState.ChannelID != event.ChannelID && event.ChannelID != guildSession.VoiceChannelID {
+			// User left this bot's channel
+			ttsMsg = fmt.Sprintf("Goodbye, %s", username)
+			log.Printf("[VSU] User '%s' left channel '%s'\n", guildMember.User.Username, event.ChannelID)
+		} else if guildSession.VoiceChannelID == event.ChannelID { // User joined this channel
+			ttsMsg = fmt.Sprintf("Welcome, %s", username)
+		} else if hasPreviousVoiceState && previousVoiceState.ChannelID != event.ChannelID {
+			log.Printf("[VSU] User '%s' joined channel '%s'\n", guildMember.User.Username, event.ChannelID)
+		}
+		if len(ttsMsg) > 0 {
+			url, _ := googletts.GetTTSURL(ttsMsg, "en")
+			var isSomethingPlaying = guildSession.MusicPlayer.IsPlaying
+			if isSomethingPlaying {
+				guildSession.MusicPlayer.Control <- models.MusicPlayerActionPause
+			}
+			guildSession.PlayURL(url, 0.5)
+			if isSomethingPlaying {
+				guildSession.MusicPlayer.Control <- models.MusicPlayerActionResume
+				log.Println("[MAIN] Patching MusicPlayer IsPlaying=true")
+				guildSession.MusicPlayer.IsPlaying = true
+			}
+		}
 
-	// 	if len(guildSessionVoiceChannelUsers) == 1 {
-	// 		// Only bot left
-	// 		log.Println("Leaving, only me left in voice channel.")
-	// 		s.UpdateStatus(&disgord.UpdateStatusPayload{AFK: true})
-	// 		var tempVoiceConn = guildSession.VoiceConnection
+		guildSessionVoiceChannelUsers := util.GetChannelVoiceStates(s, event.GuildID, guildSession.VoiceChannelID)
+		log.Printf("[VSU] Currently left %d players in voice channel\n", len(guildSessionVoiceChannelUsers))
 
-	// 		guildSession.RWMutex.Lock()
-	// 		guildSession.Queue = guildSession.Queue[0:0]
-	// 		guildSession.RWMutex.Unlock()
-	// 		guildSession.MusicPlayer.Close <- struct{}{}
-	// 		tempVoiceConn.Close()
-	// 		guildSession.VoiceConnection = nil
-	// 	}
-	// })
+		if len(guildSessionVoiceChannelUsers) == 1 {
+			// Only bot left
+			log.Println("Leaving, only me left in voice channel.")
+			s.UpdateStatus(1, "")
+			var tempVoiceConn = guildSession.VoiceConnection
+
+			guildSession.RWMutex.Lock()
+			guildSession.Queue = guildSession.Queue[0:0]
+			guildSession.RWMutex.Unlock()
+			guildSession.MusicPlayer.Close <- struct{}{}
+			tempVoiceConn.Close()
+			guildSession.VoiceConnection = nil
+		}
+	})
 
 	err = session.Open()
 	if err != nil {

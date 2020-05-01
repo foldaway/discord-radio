@@ -18,7 +18,7 @@ import (
 var tempSearchResultsCache = make(map[string][]*youtube.SearchResult)
 
 func play(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guildSession := safeGetGuildSession(m.Message.GuildID)
+	guildSession := safeGetGuildSession(s, m.Message.GuildID)
 	var isNotInVoiceChannel = guildSession.VoiceConnection == nil
 	if isNotInVoiceChannel {
 		voiceChannelInit(s, m)

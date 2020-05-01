@@ -16,3 +16,17 @@ func FindUserVoiceState(session *discordgo.Session, userid string) (*discordgo.V
 	}
 	return nil, errors.New("Could not find user's voice state")
 }
+
+func GetChannelVoiceStates(session *discordgo.Session, guildID, channelID string) []*discordgo.VoiceState {
+	var states []*discordgo.VoiceState
+
+	for _, guild := range session.State.Guilds {
+		for _, vs := range guild.VoiceStates {
+			if vs.ChannelID == channelID {
+				states = append(states, vs)
+			}
+		}
+	}
+
+	return states
+}

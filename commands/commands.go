@@ -17,10 +17,11 @@ import (
 // CommandsMap a map of all the command handlers
 var CommandsMap = make(map[string]func(*discordgo.Session, *discordgo.MessageCreate))
 
-func newGuildSession(guildID string) models.GuildSession {
+func newGuildSession(guildID, guildName string) models.GuildSession {
 	return models.GuildSession{
-		GuildID: guildID,
-		RWMutex: sync.RWMutex{},
+		GuildID:   guildID,
+		GuildName: guildName,
+		RWMutex:   sync.RWMutex{},
 		MusicPlayer: models.MusicPlayer{
 			Close:   make(chan struct{}),
 			Control: make(chan models.MusicPlayerAction),
@@ -31,11 +32,16 @@ func newGuildSession(guildID string) models.GuildSession {
 // GuildSessionMap a map of all the guild sessions
 var GuildSessionMap = make(map[string]*models.GuildSession)
 
-func safeGetGuildSession(guildID string) *models.GuildSession {
+func safeGetGuildSession(s *discordgo.Session, guildID string) *models.GuildSession {
 	if session, ok := GuildSessionMap[guildID]; ok {
 		return session
 	}
-	session := newGuildSession(guildID)
+	var guildName string
+	guild, err := s.Guild(guildID)
+	if err == nil {
+		guildName = guild.Name
+	}
+	session := newGuildSession(guildID, guildName)
 	GuildSessionMap[guildID] = &session
 	return &session
 }

@@ -13,12 +13,12 @@ import (
 
 func join(s *discordgo.Session, m *discordgo.MessageCreate) {
 	voiceChannelInit(s, m)
-	guildSession := safeGetGuildSession(m.Message.GuildID)
+	guildSession := safeGetGuildSession(s, m.Message.GuildID)
 	go guildSession.Loop()
 }
 
 func voiceChannelInit(s *discordgo.Session, m *discordgo.MessageCreate) {
-	var guildSession = safeGetGuildSession(m.Message.GuildID)
+	var guildSession = safeGetGuildSession(s, m.Message.GuildID)
 	var userVoiceState *discordgo.VoiceState
 	var err error
 

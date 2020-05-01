@@ -3,13 +3,12 @@ package commands
 import (
 	"os"
 
-	"github.com/andersfylling/disgord"
-	"github.com/bottleneckco/discord-radio/ctx"
+	"github.com/bwmarrin/discordgo"
 )
 
-func suicide(s disgord.Session, m *disgord.MessageCreate) {
+func suicide(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildSession := safeGetGuildSession(m.Message.GuildID)
-	s.SendMsg(ctx.Ctx, m.Message.ChannelID, "Goodbye, cruel world!")
+	s.ChannelMessageSend(m.Message.ChannelID, "Goodbye, cruel world!")
 	if guildSession.VoiceConnection != nil {
 		guildSession.VoiceConnection.Close()
 	}

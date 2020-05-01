@@ -4,14 +4,24 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/andersfylling/disgord"
-	"github.com/bottleneckco/discord-radio/ctx"
-	"github.com/bottleneckco/discord-radio/vscache"
+	"github.com/bwmarrin/discordgo"
 )
 
-func status(s disgord.Session, m *disgord.MessageCreate) {
+func status(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Guild Count: %d\n", len(GuildSessionMap)))
-	sb.WriteString(fmt.Sprintf("Active Voice Sessions: %d\n", vscache.ActiveVSCount()))
-	s.SendMsg(ctx.Ctx, m.Message.ChannelID, fmt.Sprintf("%s current status:\n%s", m.Message.Author.Mention(), sb.String()))
+	sb.WriteString(fmt.Sprintf("Guild Count: %d\n", len(s.State.Guilds)))
+
+	var vsCount = 0
+	var botVsCount = 0
+	for _, guild := range s.State.Guilds {
+		vsCount += len(guild.VoiceStates)
+		for _, vs := range guild.VoiceStates {
+			if vs.UserID == s.State.User.ID {
+				botVsCount += 1
+			}
+		}
+	}
+	sb.WriteString(fmt.Sprintf("Total Voice Sessions: %d\n", vsCount))
+	sb.WriteString(fmt.Sprintf("Active Bot Voice Sessions: %d\n", botVsCount))
+	s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s current status:\n%s", m.Message.Author.Mention(), sb.String()))
 }

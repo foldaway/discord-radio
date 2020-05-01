@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/andersfylling/disgord"
-	"github.com/bottleneckco/discord-radio/ctx"
+	"github.com/bwmarrin/discordgo"
 )
 
-func queue(s disgord.Session, m *disgord.MessageCreate) {
+func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildSession := safeGetGuildSession(m.Message.GuildID)
 	guildSession.RWMutex.RLock()
 	if len(guildSession.Queue) == 0 {
-		s.SendMsg(ctx.Ctx, m.Message.ChannelID, fmt.Sprintf("%s nothing in the queue.", m.Message.Author.Mention()))
+		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s nothing in the queue.", m.Message.Author.Mention()))
 		guildSession.RWMutex.RUnlock()
 		return
 	}
@@ -24,5 +23,5 @@ func queue(s disgord.Session, m *disgord.MessageCreate) {
 		b.WriteString(fmt.Sprintf("`️%d.` **%s**   ⬆️%s   ⏫%s\n", index+2, queueItem.Title, queueItem.ChannelTitle, queueItem.Author))
 	}
 	guildSession.RWMutex.RUnlock()
-	s.SendMsg(ctx.Ctx, m.Message.ChannelID, b.String())
+	s.ChannelMessageSend(m.Message.ChannelID, b.String())
 }

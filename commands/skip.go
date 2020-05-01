@@ -4,16 +4,15 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/andersfylling/disgord"
-	"github.com/bottleneckco/discord-radio/ctx"
 	"github.com/bottleneckco/discord-radio/models"
+	"github.com/bwmarrin/discordgo"
 )
 
-func skip(s disgord.Session, m *disgord.MessageCreate) {
+func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildSession := safeGetGuildSession(m.Message.GuildID)
 	guildSession.RWMutex.RLock()
 	if len(guildSession.Queue) == 0 || !guildSession.MusicPlayer.IsPlaying {
-		s.SendMsg(ctx.Ctx, m.Message.ChannelID, fmt.Sprintf("%s nothing to skip", m.Message.Author.Mention()))
+		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s nothing to skip", m.Message.Author.Mention()))
 		guildSession.RWMutex.RUnlock()
 		return
 	}
@@ -31,32 +30,32 @@ func skip(s disgord.Session, m *disgord.MessageCreate) {
 			skippedItem = guildSession.Queue[choice-1]
 			guildSession.Queue = append(guildSession.Queue[:choice-1], guildSession.Queue[choice:]...)
 		} else {
-			s.SendMsg(ctx.Ctx, m.Message.ChannelID, fmt.Sprintf("%s invalid choice", m.Message.Author.Mention()))
+			s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s invalid choice", m.Message.Author.Mention()))
 			guildSession.RWMutex.Unlock()
 			return
 		}
 	}
 	guildSession.RWMutex.Unlock()
 
-	avatarURL, _ := m.Message.Author.AvatarURL(32, false)
+	avatarURL := m.Message.Author.AvatarURL("32")
 
-	s.SendMsg(ctx.Ctx, m.Message.ChannelID, &disgord.CreateMessageParams{
-		Embed: &disgord.Embed{
-			Author: &disgord.EmbedAuthor{
+	s.ChannelMessageSendEmbed(
+		m.Message.ChannelID,
+		&discordgo.MessageEmbed{
+			Author: &discordgo.MessageEmbedAuthor{
 				Name:    "Removed from queue",
 				IconURL: avatarURL,
 			},
 			Title: skippedItem.Title,
-			Thumbnail: &disgord.EmbedThumbnail{
+			Thumbnail: &discordgo.MessageEmbedThumbnail{
 				URL: skippedItem.Thumbnail,
 			},
 			URL: fmt.Sprintf("https://www.youtube.com/watch?v=%s", skippedItem.VideoID),
-			Fields: []*disgord.EmbedField{
-				&disgord.EmbedField{
+			Fields: []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{
 					Name:  "Channel",
 					Value: skippedItem.ChannelTitle,
 				},
 			},
-		},
-	})
+		})
 }

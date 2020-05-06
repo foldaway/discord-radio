@@ -96,10 +96,22 @@ func (guildSession *GuildSession) Loop() {
 		songTitle := util.SanitiseSongTitleTTS(song.Title)
 
 		detector := langdet.NewDetector()
-		clc := langdet.UnicodeRangeLanguageComparator{"zh-TW", unicode.Han}
-		jlc := langdet.UnicodeRangeLanguageComparator{"ja", unicode.Katakana}
-		klc := langdet.UnicodeRangeLanguageComparator{"ko", unicode.Hangul}
-		eng := langdet.UnicodeRangeLanguageComparator{"en", unicode.ASCII_Hex_Digit}
+		clc := langdet.UnicodeRangeLanguageComparator{
+			Name:       "zh-TW",
+			RangeTable: unicode.Han,
+		}
+		jlc := langdet.UnicodeRangeLanguageComparator{
+			Name:       "ja",
+			RangeTable: unicode.Katakana,
+		}
+		klc := langdet.UnicodeRangeLanguageComparator{
+			Name:       "ko",
+			RangeTable: unicode.Hangul,
+		}
+		eng := langdet.UnicodeRangeLanguageComparator{
+			Name:       "en",
+			RangeTable: unicode.ASCII_Hex_Digit,
+		}
 		detector.AddLanguageComparators(&clc, &jlc, &klc, &eng)
 
 		if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", songTitle), detector.GetLanguages(songTitle)[0].Name); err == nil {

@@ -98,7 +98,7 @@ func (guildSession *GuildSession) Loop() {
 		detector.AddLanguageComparators(&clc, &jlc, &klc, &eng)
 
 		if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", songTitle), detector.GetLanguages(songTitle)[0].Name); err == nil {
-			log.Println("[PLAYER] Announcing upcoming song title")
+			log.Printf("[PLAYER] Announcing upcoming song title: '%s'\n", songTitle)
 			guildSession.PlayURL(ttsMsgURL, 0.5)
 		}
 		log.Println("[PLAYER] Playing the actual song data")

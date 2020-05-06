@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-co-op/gocron"
 	"github.com/masatana/go-textdistance"
 	"google.golang.org/api/googleapi/transport"
 
@@ -16,7 +18,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var youtubeService *youtube.Service
+var (
+	youtubeService        *youtube.Service
+	autoPlaylistItemCache = make([]*youtube.PlaylistItem, 0)
+)
 
 func init() {
 	godotenv.Load()
@@ -29,6 +34,37 @@ func init() {
 	if err != nil {
 		log.Println(err)
 	}
+
+	var scheduler = gocron.NewScheduler(time.Local)
+	scheduler.Every(2).Hours().StartImmediately().StartAt(time.Now().Add(time.Second * 2)).Do(cacheAutoPlaylistItems)
+
+	scheduler.Start()
+}
+
+func cacheAutoPlaylistItems() {
+	var envURL = os.Getenv("BOT_AUTO_PLAYLIST")
+	if len(envURL) == 0 {
+		return
+	}
+
+	log.Println("[AP] Caching items...")
+
+	var autoPlaylistURL *url.URL
+	var err error
+
+	autoPlaylistURL, err = url.ParseRequestURI(envURL)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	autoPlaylistItemCache, err = FetchAllPlaylistItems(autoPlaylistURL)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	log.Printf("[AP] Cached %d items\n", len(autoPlaylistItemCache))
 }
 
 // FetchAllPlaylistItems get all the items of a playlist
@@ -60,28 +96,16 @@ func FetchAllPlaylistItems(playlistURL *url.URL) ([]*youtube.PlaylistItem, error
 
 // GenerateAutoPlaylistQueueItem get a new item from the auto playlist (with optional parameter for item to ignore)
 func GenerateAutoPlaylistQueueItem(ignoreItem *youtube.PlaylistItem) (*youtube.PlaylistItem, error) {
-	var autoPlaylistURL *url.URL
-	var err error
-
-	autoPlaylistURL, err = url.ParseRequestURI(os.Getenv("BOT_AUTO_PLAYLIST"))
-	if err != nil {
-		return nil, err
-	}
-
-	var listings []*youtube.PlaylistItem
-	listings, err = FetchAllPlaylistItems(autoPlaylistURL)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Printf("[AP] Fetched %d items\n", len(listings))
-
 	rand.Seed(time.Now().Unix())
 
 	var chosenListing *youtube.PlaylistItem
 
+	if len(autoPlaylistItemCache) == 0 {
+		return nil, fmt.Errorf("Nothing in cache, unable to generate")
+	}
+
 	for {
-		chosenListing = listings[rand.Intn(len(listings))]
+		chosenListing = autoPlaylistItemCache[rand.Intn(len(autoPlaylistItemCache))]
 
 		snippetsResp, err := youtubeService.
 			Videos.

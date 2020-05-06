@@ -24,6 +24,7 @@ var (
 
 func init() {
 	godotenv.Load()
+
 	var err error
 	client := &http.Client{
 		Transport: &transport.APIKey{Key: os.Getenv("GOOGLE_API_KEY")},
@@ -41,6 +42,7 @@ func init() {
 }
 
 func cacheAutoPlaylistItems() {
+	rand.Seed(time.Now().UTC().UnixNano())
 	var envURL = os.Getenv("BOT_AUTO_PLAYLIST")
 	if len(envURL) == 0 {
 		return
@@ -95,8 +97,6 @@ func FetchAllPlaylistItems(playlistURL *url.URL) ([]*youtube.PlaylistItem, error
 
 // GenerateAutoPlaylistQueueItem get a new item from the auto playlist
 func GenerateAutoPlaylistQueueItem(videoIdsToAvoid []string) (*youtube.PlaylistItem, error) {
-	rand.Seed(time.Now().Unix())
-
 	var chosenListing *youtube.PlaylistItem
 
 	if len(autoPlaylistItemCache) == 0 {

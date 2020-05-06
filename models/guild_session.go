@@ -18,7 +18,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/chrisport/go-lang-detector/langdet"
 	"github.com/evalphobia/google-tts-go/googletts"
-	youtube "google.golang.org/api/youtube/v3"
 )
 
 // MusicPlayer represents a music player
@@ -45,14 +44,14 @@ const (
 
 // GuildSession represents a guild voice session
 type GuildSession struct {
-	GuildID                     string
-	GuildName                   string
-	RWMutex                     sync.RWMutex
-	Queue                       []QueueItem // current item = index 0
-	VoiceConnection             *discordgo.VoiceConnection
-	VoiceChannelID              string
-	PreviousAutoPlaylistListing *youtube.PlaylistItem
-	MusicPlayer                 MusicPlayer
+	GuildID         string
+	GuildName       string
+	RWMutex         sync.RWMutex
+	Queue           []QueueItem // current item = index 0
+	VoiceConnection *discordgo.VoiceConnection
+	VoiceChannelID  string
+	History         []string // Youtube IDs
+	MusicPlayer     MusicPlayer
 }
 
 // Loop session management loop
@@ -72,12 +71,18 @@ func (guildSession *GuildSession) Loop() {
 			continue
 		} else if len(guildSession.Queue) == 0 {
 			log.Println("[SCP] Getting from auto playlist")
-			playlistItem, err := util.GenerateAutoPlaylistQueueItem(guildSession.PreviousAutoPlaylistListing)
+			playlistItem, err := util.GenerateAutoPlaylistQueueItem(guildSession.History)
 			if err != nil {
 				log.Printf("[SCP] Error generating auto playlist item: %s\n", err)
 				time.Sleep(1 * time.Second)
 				continue
 			}
+
+			// Clear history automatically
+			if len(guildSession.History) >= util.GetAutoPlaylistCacheLength() {
+				guildSession.History = make([]string, 0)
+			}
+
 			queueItem := ConvertYouTubePlaylistItem(playlistItem)
 			guildSession.RWMutex.Lock()
 			guildSession.Queue = append(guildSession.Queue, queueItem)
@@ -108,6 +113,7 @@ func (guildSession *GuildSession) Loop() {
 			volume = volumeConv
 		}
 		guildSession.PlayYouTube(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), volume)
+		guildSession.History = append(guildSession.History, song.VideoID)
 		guildSession.RWMutex.Lock()
 		if len(guildSession.Queue) > 0 {
 			guildSession.Queue = guildSession.Queue[1:]

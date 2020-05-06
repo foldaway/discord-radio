@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
-	"github.com/masatana/go-textdistance"
 	"google.golang.org/api/googleapi/transport"
 
 	"google.golang.org/api/youtube/v3"
@@ -94,8 +93,8 @@ func FetchAllPlaylistItems(playlistURL *url.URL) ([]*youtube.PlaylistItem, error
 	return listings, nil
 }
 
-// GenerateAutoPlaylistQueueItem get a new item from the auto playlist (with optional parameter for item to ignore)
-func GenerateAutoPlaylistQueueItem(ignoreItem *youtube.PlaylistItem) (*youtube.PlaylistItem, error) {
+// GenerateAutoPlaylistQueueItem get a new item from the auto playlist
+func GenerateAutoPlaylistQueueItem(videoIdsToAvoid []string) (*youtube.PlaylistItem, error) {
 	rand.Seed(time.Now().Unix())
 
 	var chosenListing *youtube.PlaylistItem
@@ -104,7 +103,7 @@ func GenerateAutoPlaylistQueueItem(ignoreItem *youtube.PlaylistItem) (*youtube.P
 		return nil, fmt.Errorf("Nothing in cache, unable to generate")
 	}
 
-	for {
+	for chosenListing == nil || chosenListing.Snippet == nil {
 		chosenListing = autoPlaylistItemCache[rand.Intn(len(autoPlaylistItemCache))]
 
 		snippetsResp, err := youtubeService.
@@ -119,18 +118,34 @@ func GenerateAutoPlaylistQueueItem(ignoreItem *youtube.PlaylistItem) (*youtube.P
 			continue
 		}
 
-		if ignoreItem == nil || textdistance.LevenshteinDistance(ignoreItem.Snippet.Title, snippetsResp.Items[0].Snippet.Title) > 20 {
-			// Use youtube.Video to populate youtube.PlaylistItemSnippet
-			chosenListing.Snippet = &youtube.PlaylistItemSnippet{
-				Title:        snippetsResp.Items[0].Snippet.Title,
-				ChannelTitle: snippetsResp.Items[0].Snippet.ChannelTitle,
-				Thumbnails:   snippetsResp.Items[0].Snippet.Thumbnails,
-			}
-			break
+		if stringInSlice(snippetsResp.Items[0].Id, videoIdsToAvoid) {
+			// Played before
+			continue
 		}
+
+		chosenListing.Snippet = &youtube.PlaylistItemSnippet{
+			Title:        snippetsResp.Items[0].Snippet.Title,
+			ChannelTitle: snippetsResp.Items[0].Snippet.ChannelTitle,
+			Thumbnails:   snippetsResp.Items[0].Snippet.Thumbnails,
+		}
+
 	}
 
 	log.Printf("[AP] Chosen video '%s' by '%s'\n", chosenListing.Snippet.Title, chosenListing.Snippet.ChannelTitle)
 
 	return chosenListing, nil
+}
+
+func GetAutoPlaylistCacheLength() int {
+	return len(autoPlaylistItemCache)
+}
+
+// https://stackoverflow.com/questions/15323767/does-go-have-if-x-in-construct-similar-to-python
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }

@@ -161,7 +161,7 @@ func main() {
 			guildSession.Queue = guildSession.Queue[0:0]
 			guildSession.RWMutex.Unlock()
 			guildSession.MusicPlayer.Close <- struct{}{}
-			tempVoiceConn.Close()
+			tempVoiceConn.Disconnect()
 			guildSession.VoiceConnection = nil
 		}
 	})
@@ -183,7 +183,7 @@ func main() {
 
 		for _, guildSession := range commands.GuildSessionMap {
 			if guildSession.VoiceConnection != nil {
-				guildSession.VoiceConnection.Close()
+				guildSession.VoiceConnection.Disconnect()
 			}
 		}
 

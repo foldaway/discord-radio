@@ -30,7 +30,7 @@ func leave(s *discordgo.Session, m *discordgo.MessageCreate) {
 		guildSession.Queue = guildSession.Queue[0:0]
 		guildSession.RWMutex.Unlock()
 		guildSession.MusicPlayer.Close <- struct{}{}
-		tempVoiceConn.Close()
+		tempVoiceConn.Disconnect()
 		delete(GuildSessionMap, m.Message.GuildID)
 
 		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s left '%s'", m.Message.Author.Mention(), channel.Name))

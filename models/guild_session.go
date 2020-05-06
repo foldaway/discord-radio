@@ -124,25 +124,18 @@ func (guildSession *GuildSession) Loop() {
 
 // Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go
 
-func createYTPipe(youtubeURL string) (*bufio.Reader, *os.Process, error) {
+func createYTPipe(youtubeURL string) (*bufio.Reader, *exec.Cmd, error) {
 	args := []string{"-q", "-f", "bestaudio[abr>=130],best", "-o", "-", youtubeURL}
 	ytdl := exec.Command("youtube-dl", args...)
 	ytdl.Stderr = os.Stderr
 	ytdlout, err := ytdl.StdoutPipe()
 	if err != nil {
 		log.Println("ytdl StdoutPipe err:", err)
-		return nil, ytdl.Process, err
+		return nil, ytdl, err
 	}
-	err = ytdl.Start()
-	if err != nil {
-		log.Println("ytdl Start err:", err)
-		return nil, ytdl.Process, err
-	}
-	defer func() {
-		go ytdl.Wait()
-	}()
+
 	ytdlbuf := bufio.NewReaderSize(ytdlout, 16384)
-	return ytdlbuf, ytdl.Process, nil
+	return ytdlbuf, ytdl, nil
 }
 
 // PlayYouTube play a YouTube video
@@ -167,7 +160,7 @@ func (guildSession *GuildSession) PlayURL(url string, volume float64) error {
 
 	return guildSession.play(bufio.NewReader(resp.Body), nil, volume)
 }
-func (guildSession *GuildSession) play(pipe *bufio.Reader, proc *os.Process, volume float64) error {
+func (guildSession *GuildSession) play(pipe *bufio.Reader, proc *exec.Cmd, volume float64) error {
 	guildSession.MusicPlayer.IsPlaying = true
 
 	defer func() {
@@ -213,23 +206,22 @@ func (guildSession *GuildSession) play(pipe *bufio.Reader, proc *os.Process, vol
 	}
 	dcabuf := bufio.NewReaderSize(dcaout, 16384)
 
+	if proc != nil {
+		err := proc.Start()
+		if err != nil {
+			log.Println("Proc Start error", err)
+		}
+	}
+
 	err = ffmpeg.Start()
 	if err != nil {
-		log.Println("ffmpeg Start err:", err)
-		return err
+		log.Println("ffmpeg Start error", err)
 	}
-	defer func() {
-		go ffmpeg.Wait()
-	}()
 
 	err = dca.Start()
 	if err != nil {
-		log.Println("dca Start err:", err)
-		return err
+		log.Println("dca Start error", err)
 	}
-	defer func() {
-		go dca.Wait()
-	}()
 
 	// header "buffer"
 	var opuslen int16
@@ -245,7 +237,7 @@ func (guildSession *GuildSession) play(pipe *bufio.Reader, proc *os.Process, vol
 			guildSession.VoiceConnection.Speaking(false)
 		}
 		if proc != nil {
-			proc.Kill()
+			proc.Process.Kill()
 		}
 		dca.Process.Kill()
 		ffmpeg.Process.Kill()
@@ -270,7 +262,6 @@ func (guildSession *GuildSession) play(pipe *bufio.Reader, proc *os.Process, vol
 			case MusicPlayerActionPause:
 				done := false
 				for {
-
 					ctl, ok := <-guildSession.MusicPlayer.Control
 					if !ok {
 						return nil
@@ -290,6 +281,17 @@ func (guildSession *GuildSession) play(pipe *bufio.Reader, proc *os.Process, vol
 				}
 			}
 		default:
+		}
+
+		if ffmpeg.ProcessState != nil && ffmpeg.ProcessState.Exited() {
+			log.Println("FFmpeg exited early. Something wrong during playback")
+			return nil
+		} else if proc != nil && proc.ProcessState != nil && proc.ProcessState.Exited() {
+			log.Println("Proc exited early. Something wrong during playback")
+			return nil
+		} else if dca.ProcessState != nil && dca.ProcessState.Exited() {
+			log.Println("DCA exited early. Something wrong during playback")
+			return nil
 		}
 
 		// read dca opus length header

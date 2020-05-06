@@ -124,8 +124,8 @@ func (guildSession *GuildSession) Loop() {
 		if err == nil {
 			volume = volumeConv
 		}
-		guildSession.PlayYouTube(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), volume)
 		guildSession.History = append(guildSession.History, song.VideoID)
+		guildSession.PlayYouTube(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID), volume)
 		guildSession.RWMutex.Lock()
 		if len(guildSession.Queue) > 0 {
 			guildSession.Queue = guildSession.Queue[1:]

@@ -103,7 +103,7 @@ func GenerateAutoPlaylistQueueItem(videoIdsToAvoid []string) (*youtube.PlaylistI
 		return nil, fmt.Errorf("Nothing in cache, unable to generate")
 	}
 
-	for chosenListing == nil || chosenListing.Snippet == nil {
+	for {
 		chosenListing = autoPlaylistItemCache[rand.Intn(len(autoPlaylistItemCache))]
 
 		snippetsResp, err := youtubeService.
@@ -120,6 +120,7 @@ func GenerateAutoPlaylistQueueItem(videoIdsToAvoid []string) (*youtube.PlaylistI
 
 		if stringInSlice(snippetsResp.Items[0].Id, videoIdsToAvoid) {
 			// Played before
+			log.Println("Reshuffling, played before")
 			continue
 		}
 
@@ -128,6 +129,7 @@ func GenerateAutoPlaylistQueueItem(videoIdsToAvoid []string) (*youtube.PlaylistI
 			ChannelTitle: snippetsResp.Items[0].Snippet.ChannelTitle,
 			Thumbnails:   snippetsResp.Items[0].Snippet.Thumbnails,
 		}
+		break
 
 	}
 

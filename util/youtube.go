@@ -31,30 +31,47 @@ func init() {
 	}
 }
 
-// GenerateAutoPlaylistQueueItem get a new item from the auto playlist (with optional parameter for item to ignore)
-func GenerateAutoPlaylistQueueItem(ignoreItem *youtube.PlaylistItem) (*youtube.PlaylistItem, error) {
-	parsedURI, err := url.ParseRequestURI(os.Getenv("BOT_AUTO_PLAYLIST"))
-	if err != nil {
-		return nil, err
-	}
+// FetchAllPlaylistItems get all the items of a playlist
+func FetchAllPlaylistItems(playlistURL *url.URL) ([]*youtube.PlaylistItem, error) {
 	var listings []*youtube.PlaylistItem
 	var pageToken string
 	for {
 		youtubeListings, err := youtubeService.
 			PlaylistItems.
 			List("contentDetails").
-			PlaylistId(parsedURI.Query().Get("list")).
+			PlaylistId(playlistURL.Query().Get("list")).
 			MaxResults(50).
 			PageToken(pageToken).
 			Do()
+
 		if err != nil {
-			return nil, err
+			return listings, err
 		}
+
 		listings = append(listings, youtubeListings.Items...)
 		pageToken = youtubeListings.NextPageToken
 		if len(pageToken) == 0 {
 			break
 		}
+	}
+
+	return listings, nil
+}
+
+// GenerateAutoPlaylistQueueItem get a new item from the auto playlist (with optional parameter for item to ignore)
+func GenerateAutoPlaylistQueueItem(ignoreItem *youtube.PlaylistItem) (*youtube.PlaylistItem, error) {
+	var autoPlaylistURL *url.URL
+	var err error
+
+	autoPlaylistURL, err = url.ParseRequestURI(os.Getenv("BOT_AUTO_PLAYLIST"))
+	if err != nil {
+		return nil, err
+	}
+
+	var listings []*youtube.PlaylistItem
+	listings, err = FetchAllPlaylistItems(autoPlaylistURL)
+	if err != nil {
+		return nil, err
 	}
 
 	log.Printf("[AP] Fetched %d items\n", len(listings))

@@ -8,6 +8,8 @@ github.com/andersfylling/disgord v0.16.5 h1:1pG2I08CZGKtavELysjY1UB94/dhmNTi1EnD
 github.com/andersfylling/disgord v0.16.5/go.mod h1:qU+x6K0pS6dtcpXRY9rjr4MX5zkTk+ROxwhDYVvfKEE=
 github.com/andersfylling/snowflake/v4 v4.0.2 h1:7po1HHxq8Pz7F+vsMFMoGiHOlpzBzqXoop4O8b24wqI=
 github.com/andersfylling/snowflake/v4 v4.0.2/go.mod h1:4lIbDTtWCTaYBCZVVIDjIH8xbzHSYz+RvxK2KZND840=
+github.com/bwmarrin/dca v0.0.0-20180611192139-99fdf68b87a1 h1:cg9RbFHuRcbwoLuwD7PCbFTp0i0pD+TW2OlL/a8ISaA=
+github.com/bwmarrin/dca v0.0.0-20180611192139-99fdf68b87a1/go.mod h1:bmq4mKUZ9IMhyjgzrsNMhufv6DkXja+JPyYNl5QTvfg=
 github.com/bwmarrin/discordgo v0.20.3 h1:AxjcHGbyBFSC0a3Zx5nDQwbOjU7xai5dXjRnZ0YB7nU=
 github.com/bwmarrin/discordgo v0.20.3/go.mod h1:O9S4p+ofTFwB02em7jkpkV8M3R0/PUVOwN61zSZ0r4Q=
 github.com/chrisport/go-lang-detector v0.0.0-20180912070833-7e13c74bc6e3 h1:iFqsBjwu+Y0l0wb2RCnz5F7nMHBwKKgo3T83ztugtG8=
@@ -211,5 +213,7 @@ honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWh
 honnef.co/go/tools v0.0.0-20190106161140-3f1c8253044a/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190418001031-e561f6794a2a/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.1-2019.2.3/go.mod h1:a3bituU0lyd329TUQxRnasdCoJDkEUEAqEt0JzvZhAg=
+layeh.com/gopus v0.0.0-20161224163843-0ebf989153aa h1:WNU4LYsgD2UHxgKgB36mL6iMAMOvr127alafSlgBbiA=
+layeh.com/gopus v0.0.0-20161224163843-0ebf989153aa/go.mod h1:AOef7vHz0+v4sWwJnr0jSyHiX/1NgsMoaxl+rEPz/I0=
 nhooyr.io/websocket v1.7.4 h1:w/LGB2sZT0RV8lZYR7nfyaYz4PUbYZ5oF7NBon2M0NY=
 nhooyr.io/websocket v1.7.4/go.mod h1:PxYxCwFdFYQ0yRvtQz3s/dC+VEm7CSuC/4b9t8MQQxw=

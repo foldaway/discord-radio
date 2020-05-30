@@ -11,7 +11,7 @@ import (
 func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildSession := safeGetGuildSession(s, m.Message.GuildID)
 	guildSession.RWMutex.RLock()
-	if len(guildSession.Queue) == 0 || !guildSession.MusicPlayer.IsPlaying {
+	if len(guildSession.Queue) == 0 || guildSession.MusicPlayer.PlaybackState == models.PlaybackStateStopped {
 		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s nothing to skip", m.Message.Author.Mention()))
 		guildSession.RWMutex.RUnlock()
 		return
@@ -23,7 +23,7 @@ func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// No args, skip current
 		skippedItem = guildSession.Queue[0]
 		// Queue = append(Queue[:0], Queue[1:]...)
-		guildSession.MusicPlayer.Control <- models.MusicPlayerActionSkip
+		guildSession.MusicPlayer.Control <- models.MusicPlayerActionStop
 	} else {
 		choice, err := strconv.ParseInt(m.Message.Content, 10, 64)
 		if err == nil && (choice-1 >= 0 && choice-1 < int64(len(guildSession.Queue))) {

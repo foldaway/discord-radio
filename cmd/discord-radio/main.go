@@ -34,7 +34,7 @@ func main() {
 	scheduler.Every(5).Seconds().Do(func() {
 		var sb strings.Builder
 		for _, guildSession := range commands.GuildSessionMap {
-			if len(guildSession.Queue) > 0 && guildSession.MusicPlayer.IsPlaying {
+			if len(guildSession.Queue) > 0 && guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying {
 				song := guildSession.Queue[0]
 				sb.WriteString(fmt.Sprintf("[%s] (1 of %d) %s | ", util.GenerateAcronym(guildSession.GuildName), len(guildSession.Queue), song.Title))
 			}
@@ -136,15 +136,13 @@ func main() {
 		}
 		if len(ttsMsg) > 0 {
 			url, _ := googletts.GetTTSURL(ttsMsg, "en")
-			var isSomethingPlaying = guildSession.MusicPlayer.IsPlaying
+			var isSomethingPlaying = guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying
 			if isSomethingPlaying {
 				guildSession.MusicPlayer.Control <- models.MusicPlayerActionPause
 			}
-			guildSession.PlayURL(url, 0.5)
+			guildSession.MusicPlayer.PlayURL(url)
 			if isSomethingPlaying {
 				guildSession.MusicPlayer.Control <- models.MusicPlayerActionResume
-				log.Println("[MAIN] Patching MusicPlayer IsPlaying=true")
-				guildSession.MusicPlayer.IsPlaying = true
 			}
 		}
 

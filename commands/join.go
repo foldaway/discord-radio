@@ -48,6 +48,7 @@ func voiceChannelInit(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Update guildSession
 	guildSession.VoiceConnection = voiceChannel
 	guildSession.VoiceChannelID = channel.ID
+  guildSession.MusicPlayer.PlaybackChannel = voiceChannel.OpusSend
 
 	s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s joined '%s'", m.Message.Author.Mention(), channel.Name))
 	log.Printf(fmt.Sprintf("%s joined '%s' guild '%s'\n", m.Message.Author.Mention(), channel.Name, m.Message.GuildID))
@@ -71,5 +72,5 @@ func voiceChannelInit(s *discordgo.Session, m *discordgo.MessageCreate) {
 	ytdlCmd.Stderr = os.Stderr
 	ytdlCmd.Run()
 
-	guildSession.PlayURL(url, 0.5)
+	guildSession.MusicPlayer.PlayURL(url)
 }

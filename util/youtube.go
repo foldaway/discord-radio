@@ -73,6 +73,7 @@ func FetchAllPlaylistItems(playlistURL *url.URL) ([]*youtube.PlaylistItem, error
 	var listings []*youtube.PlaylistItem
 	var pageToken string
 	for {
+		log.Printf("Fetching from YOUTUBE. We now have %d listings\n", len(listings))
 		youtubeListings, err := youtubeService.
 			PlaylistItems.
 			List("contentDetails").

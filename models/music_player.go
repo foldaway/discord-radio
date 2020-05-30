@@ -118,7 +118,7 @@ func (mp *MusicPlayer) PlayStream(stream *bufio.Reader) error {
 		log.Println("ffmpeg StdoutPipe err:", err)
 		return err
 	}
-	ffmpegbuf := bufio.NewReaderSize(ffmpegout, 16384)
+	ffmpegbuf := bufio.NewReaderSize(ffmpegout, 1000000)
 
 	dca := exec.Command("dca")
 	dca.Stdin = ffmpegbuf
@@ -129,7 +129,7 @@ func (mp *MusicPlayer) PlayStream(stream *bufio.Reader) error {
 		return err
 	}
 
-	var dcabuf = bufio.NewReaderSize(dcaout, 16384)
+	var dcabuf = bufio.NewReaderSize(dcaout, 1000000)
 
 	mp.PlaybackState = PlaybackStatePlaying
 	defer func() {

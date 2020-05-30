@@ -24,6 +24,7 @@ var (
 
 func init() {
 	godotenv.Load()
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	var err error
 	client := &http.Client{
@@ -42,7 +43,6 @@ func init() {
 }
 
 func cacheAutoPlaylistItems() {
-	rand.Seed(time.Now().UTC().UnixNano())
 	var envURL = os.Getenv("BOT_AUTO_PLAYLIST")
 	if len(envURL) == 0 {
 		return

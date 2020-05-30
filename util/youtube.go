@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"math/rand"
@@ -15,6 +16,8 @@ import (
 	"google.golang.org/api/youtube/v3"
 
 	"github.com/joho/godotenv"
+
+	cryptoRand "crypto/rand"
 )
 
 var (
@@ -24,9 +27,18 @@ var (
 
 func init() {
 	godotenv.Load()
-	rand.Seed(time.Now().UTC().UnixNano())
 
-	var err error
+  // https://stackoverflow.com/a/54491783
+  var b [8]byte
+  var err error
+  _, err = cryptoRand.Read(b[:])
+  if err != nil {
+    log.Println("Could not seed with crypto/rand")
+    rand.Seed(time.Now().UnixNano())
+  } else {
+    rand.Seed(int64(binary.LittleEndian.Uint64(b[:])))
+  }
+
 	client := &http.Client{
 		Transport: &transport.APIKey{Key: os.Getenv("GOOGLE_API_KEY")},
 	}

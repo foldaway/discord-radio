@@ -158,9 +158,12 @@ func main() {
 			guildSession.RWMutex.Lock()
 			guildSession.Queue = guildSession.Queue[0:0]
 			guildSession.RWMutex.Unlock()
-			guildSession.MusicPlayer.Close <- struct{}{}
-			tempVoiceConn.Disconnect()
 			guildSession.VoiceConnection = nil
+      
+      if guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying {
+        guildSession.MusicPlayer.Control <- models.MusicPlayerActionStop
+      }
+			tempVoiceConn.Disconnect()
 		}
 	})
 

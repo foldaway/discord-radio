@@ -38,7 +38,6 @@ func init() {
 // MusicPlayer represents a music player
 type MusicPlayer struct {
 	PlaybackState   PlaybackState
-	Close           chan struct{}
 	Control         chan MusicPlayerAction
 	PlaybackChannel chan []byte
 	playStream      *bytes.Buffer

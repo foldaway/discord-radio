@@ -23,7 +23,6 @@ func newGuildSession(guildID, guildName string) models.GuildSession {
 		GuildName: guildName,
 		RWMutex:   sync.RWMutex{},
 		MusicPlayer: models.MusicPlayer{
-			Close:   make(chan struct{}),
 			Control: make(chan models.MusicPlayerAction),
 		},
 	}

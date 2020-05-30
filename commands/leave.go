@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/bottleneckco/discord-radio/models"
 	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bwmarrin/discordgo"
 )
@@ -29,7 +30,10 @@ func leave(s *discordgo.Session, m *discordgo.MessageCreate) {
 		guildSession.RWMutex.Lock()
 		guildSession.Queue = guildSession.Queue[0:0]
 		guildSession.RWMutex.Unlock()
-		guildSession.MusicPlayer.Close <- struct{}{}
+    guildSession.VoiceConnection = nil
+    if guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying {
+      guildSession.MusicPlayer.Control <- models.MusicPlayerActionStop
+    }
 		tempVoiceConn.Disconnect()
 		delete(GuildSessionMap, m.Message.GuildID)
 

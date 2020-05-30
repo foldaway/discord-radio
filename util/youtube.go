@@ -36,7 +36,7 @@ func init() {
 	}
 
 	var scheduler = gocron.NewScheduler(time.Local)
-	scheduler.Every(2).Hours().StartImmediately().StartAt(time.Now().Add(time.Second * 2)).Do(cacheAutoPlaylistItems)
+	scheduler.Every(6).Hours().StartImmediately().StartAt(time.Now().Add(time.Second * 2)).Do(cacheAutoPlaylistItems)
 
 	scheduler.Start()
 }

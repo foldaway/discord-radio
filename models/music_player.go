@@ -105,7 +105,7 @@ func (mp *MusicPlayer) PlayStream(stream *bufio.Reader) error {
 		"-ac",
 		"2",
 		"-af",
-		fmt.Sprintf("dynaudnorm=f=500:g=101:n=0:p=0.95,volume=%f", volume),
+		fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=%f", volume),
 		"-b:a",
 		"256k",
 		"pipe:1",

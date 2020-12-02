@@ -12,7 +12,6 @@ import (
 	"github.com/bottleneckco/discord-radio/models"
 	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bwmarrin/discordgo"
-	"github.com/evalphobia/google-tts-go/googletts"
 	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
 )
@@ -135,15 +134,15 @@ func main() {
 			log.Printf("[VSU] User '%s' joined channel '%s'\n", guildMember.User.Username, event.ChannelID)
 		}
 		if len(ttsMsg) > 0 {
-			url, _ := googletts.GetTTSURL(ttsMsg, "en")
-			var isSomethingPlaying = guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying
-			if isSomethingPlaying {
-				guildSession.MusicPlayer.Control <- models.MusicPlayerActionPause
-			}
-			guildSession.MusicPlayer.PlayURL(url)
-			if isSomethingPlaying {
-				guildSession.MusicPlayer.Control <- models.MusicPlayerActionResume
-			}
+			//url, _ := googletts.GetTTSURL(ttsMsg, "en")
+			// var isSomethingPlaying = guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying
+			// if isSomethingPlaying {
+			// 	guildSession.MusicPlayer.Control <- models.MusicPlayerActionPause
+			// }
+			//guildSession.MusicPlayer.PlayURL(url)
+			// if isSomethingPlaying {
+			// 	guildSession.MusicPlayer.Control <- models.MusicPlayerActionResume
+			// }
 		}
 
 		guildSessionVoiceChannelUsers := util.GetChannelVoiceStates(s, event.GuildID, guildSession.VoiceChannelID)
@@ -159,10 +158,10 @@ func main() {
 			guildSession.Queue = guildSession.Queue[0:0]
 			guildSession.RWMutex.Unlock()
 			guildSession.VoiceConnection = nil
-      
-      if guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying {
-        guildSession.MusicPlayer.Control <- models.MusicPlayerActionStop
-      }
+
+			if guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying {
+				guildSession.MusicPlayer.Control <- models.MusicPlayerActionStop
+			}
 			tempVoiceConn.Disconnect()
 		}
 	})

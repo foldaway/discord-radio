@@ -8,7 +8,6 @@ import (
 
 	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bwmarrin/discordgo"
-	"github.com/evalphobia/google-tts-go/googletts"
 )
 
 func join(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -48,12 +47,12 @@ func voiceChannelInit(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Update guildSession
 	guildSession.VoiceConnection = voiceChannel
 	guildSession.VoiceChannelID = channel.ID
-  guildSession.MusicPlayer.PlaybackChannel = voiceChannel.OpusSend
+	guildSession.MusicPlayer.PlaybackChannel = voiceChannel.OpusSend
 
 	s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s joined '%s'", m.Message.Author.Mention(), channel.Name))
 	log.Printf(fmt.Sprintf("%s joined '%s' guild '%s'\n", m.Message.Author.Mention(), channel.Name, m.Message.GuildID))
 
-	url, _ := googletts.GetTTSURL("Ready", "en")
+	//url, _ := googletts.GetTTSURL("Ready", "en")
 	if os.Getenv("BOT_UPDATE_YTDL") == "true" {
 		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s updating youtube-dl binary, give me some time.", m.Message.Author.Mention()))
 
@@ -72,5 +71,5 @@ func voiceChannelInit(s *discordgo.Session, m *discordgo.MessageCreate) {
 	ytdlCmd.Stderr = os.Stderr
 	ytdlCmd.Run()
 
-	guildSession.MusicPlayer.PlayURL(url)
+	//guildSession.MusicPlayer.PlayURL(url)
 }

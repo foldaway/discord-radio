@@ -11,7 +11,6 @@ import (
 	"github.com/bottleneckco/discord-radio/util"
 	"github.com/bwmarrin/discordgo"
 	"github.com/chrisport/go-lang-detector/langdet"
-	"github.com/evalphobia/google-tts-go/googletts"
 )
 
 // GuildSession represents a guild voice session
@@ -71,7 +70,7 @@ func (guildSession *GuildSession) Loop() {
 		guildSession.RWMutex.RUnlock()
 
 		// Announce music title
-		songTitle := util.SanitiseSongTitleTTS(song.Title)
+		// songTitle := util.SanitiseSongTitleTTS(song.Title)
 
 		detector := langdet.NewDetector()
 		clc := langdet.UnicodeRangeLanguageComparator{
@@ -92,14 +91,14 @@ func (guildSession *GuildSession) Loop() {
 		}
 		detector.AddLanguageComparators(&clc, &jlc, &klc, &eng)
 
-		if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", songTitle), detector.GetLanguages(songTitle)[0].Name); err == nil {
-			log.Printf("[PLAYER] Announcing upcoming song title: '%s'\n", songTitle)
+		// if ttsMsgURL, err := googletts.GetTTSURL(fmt.Sprintf("Music: %s", songTitle), detector.GetLanguages(songTitle)[0].Name); err == nil {
+		// 	log.Printf("[PLAYER] Announcing upcoming song title: '%s'\n", songTitle)
 
-			err = guildSession.MusicPlayer.PlayURL(ttsMsgURL)
-			if err != nil {
-				log.Println("Playback error", err)
-			}
-		}
+		// 	err = guildSession.MusicPlayer.PlayURL(ttsMsgURL)
+		// 	if err != nil {
+		// 		log.Println("Playback error", err)
+		// 	}
+		// }
 		log.Println("[PLAYER] Playing the actual song data")
 
 		guildSession.History = append(guildSession.History, song.VideoID)

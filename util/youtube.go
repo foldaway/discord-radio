@@ -76,6 +76,12 @@ func cacheAutoPlaylistItems() {
 		log.Println(err)
 		return
 	}
+	sort.Slice(autoPlaylistItemCache, func(i, j int) bool {
+		var titlePartsI = strings.Split(autoPlaylistItemCache[i].Snippet.Title, " - ")
+		var titlePartsJ = strings.Split(autoPlaylistItemCache[j].Snippet.Title, " - ")
+
+		return titlePartsI[0] < titlePartsJ[0]
+	})
 
 	log.Printf("[AP] Cached %d items\n", len(autoPlaylistItemCache))
 }
@@ -88,7 +94,7 @@ func FetchAllPlaylistItems(playlistURL *url.URL) ([]*youtube.PlaylistItem, error
 		log.Printf("Fetching from YOUTUBE. We now have %d listings\n", len(listings))
 		youtubeListings, err := youtubeService.
 			PlaylistItems.
-			List("contentDetails").
+			List("contentDetails,snippet").
 			PlaylistId(playlistURL.Query().Get("list")).
 			MaxResults(50).
 			PageToken(pageToken).

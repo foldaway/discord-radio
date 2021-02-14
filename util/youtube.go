@@ -135,7 +135,7 @@ func GenerateAutoPlaylistQueueItem(videoIdsToAvoid []string) (*youtube.PlaylistI
 		log.Println("Reshuffling, played before")
 	}
 
-	log.Printf("[AP] Chosen video '%s' by '%s'\n", chosenListing.Snippet.Title, chosenListing.Snippet.ChannelTitle)
+	log.Printf("[AP] Chosen video '%s'\n", chosenListing.Snippet.Title)
 
 	return chosenListing, nil
 }

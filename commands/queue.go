@@ -18,9 +18,9 @@ func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("%s here is the queue:\n", m.Message.Author.Mention()))
 
-	b.WriteString(fmt.Sprintf("⏯ **%s**    ▶️️%s   ⏫%s\n", guildSession.Queue[0].Title, guildSession.Queue[0].ChannelTitle, guildSession.Queue[0].Author))
+	b.WriteString(fmt.Sprintf("⏯ **%s <%s>**   ⏫%s\n", guildSession.Queue[0].Title, fmt.Sprintf("https://youtube.com/watch?v=%s", guildSession.Queue[0].VideoID), guildSession.Queue[0].Author))
 	for index, queueItem := range guildSession.Queue[1:] {
-		b.WriteString(fmt.Sprintf("`️%d.` **%s**   ⬆️%s   ⏫%s\n", index+2, queueItem.Title, queueItem.ChannelTitle, queueItem.Author))
+		b.WriteString(fmt.Sprintf("`️%d.` **%s <%s>**   ⏫%s\n", index+2, queueItem.Title, fmt.Sprintf("https://youtube.com/watch?v=%s", queueItem.VideoID), queueItem.Author))
 	}
 	guildSession.RWMutex.RUnlock()
 	s.ChannelMessageSend(m.Message.ChannelID, b.String())

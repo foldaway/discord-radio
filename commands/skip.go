@@ -53,8 +53,8 @@ func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 			URL: fmt.Sprintf("https://www.youtube.com/watch?v=%s", skippedItem.VideoID),
 			Fields: []*discordgo.MessageEmbedField{
 				&discordgo.MessageEmbedField{
-					Name:  "Channel",
-					Value: skippedItem.ChannelTitle,
+					Name:  "Queued by",
+					Value: skippedItem.Author,
 				},
 			},
 		})

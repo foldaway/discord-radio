@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -28,16 +30,16 @@ var (
 func init() {
 	godotenv.Load()
 
-  // https://stackoverflow.com/a/54491783
-  var b [8]byte
-  var err error
-  _, err = cryptoRand.Read(b[:])
-  if err != nil {
-    log.Println("Could not seed with crypto/rand")
-    rand.Seed(time.Now().UnixNano())
-  } else {
-    rand.Seed(int64(binary.LittleEndian.Uint64(b[:])))
-  }
+	// https://stackoverflow.com/a/54491783
+	var b [8]byte
+	var err error
+	_, err = cryptoRand.Read(b[:])
+	if err != nil {
+		log.Println("Could not seed with crypto/rand")
+		rand.Seed(time.Now().UnixNano())
+	} else {
+		rand.Seed(int64(binary.LittleEndian.Uint64(b[:])))
+	}
 
 	client := &http.Client{
 		Transport: &transport.APIKey{Key: os.Getenv("GOOGLE_API_KEY")},
@@ -125,31 +127,12 @@ func GenerateAutoPlaylistQueueItem(videoIdsToAvoid []string) (*youtube.PlaylistI
 	for {
 		chosenListing = autoPlaylistItemCache[rand.Intn(len(autoPlaylistItemCache))]
 
-		snippetsResp, err := youtubeService.
-			Videos.
-			List("snippet").
-			Id(chosenListing.ContentDetails.VideoId).
-			Do()
-		if err != nil {
-			return nil, err
-		}
-		if len(snippetsResp.Items) == 0 {
-			continue
+		if !stringInSlice(chosenListing.Snippet.ResourceId.VideoId, videoIdsToAvoid) {
+			break
 		}
 
-		if stringInSlice(snippetsResp.Items[0].Id, videoIdsToAvoid) {
-			// Played before
-			log.Println("Reshuffling, played before")
-			continue
-		}
-
-		chosenListing.Snippet = &youtube.PlaylistItemSnippet{
-			Title:        snippetsResp.Items[0].Snippet.Title,
-			ChannelTitle: snippetsResp.Items[0].Snippet.ChannelTitle,
-			Thumbnails:   snippetsResp.Items[0].Snippet.Thumbnails,
-		}
-		break
-
+		// Played before
+		log.Println("Reshuffling, played before")
 	}
 
 	log.Printf("[AP] Chosen video '%s' by '%s'\n", chosenListing.Snippet.Title, chosenListing.Snippet.ChannelTitle)

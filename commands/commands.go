@@ -25,7 +25,7 @@ var (
 	GuildSessionMap = make(map[disgord.Snowflake]*session.GuildSession)
 )
 
-func newGuildSession(guildID disgord.Snowflake, guildName string) session.GuildSession {
+func createGuildSession(guildID disgord.Snowflake, guildName string) session.GuildSession {
 	return session.GuildSession{
 		GuildID:   guildID,
 		GuildName: guildName,
@@ -37,7 +37,7 @@ func newGuildSession(guildID disgord.Snowflake, guildName string) session.GuildS
 	}
 }
 
-func safeGetGuildSession(s disgord.Session, guildID disgord.Snowflake) *session.GuildSession {
+func findOrCreateGuildSession(s disgord.Session, guildID disgord.Snowflake) *session.GuildSession {
 	if session, ok := GuildSessionMap[guildID]; ok {
 		return session
 	}
@@ -46,7 +46,7 @@ func safeGetGuildSession(s disgord.Session, guildID disgord.Snowflake) *session.
 	if err == nil {
 		guildName = guild.Name
 	}
-	session := newGuildSession(guildID, guildName)
+	session := createGuildSession(guildID, guildName)
 	GuildSessionMap[guildID] = &session
 	return &session
 }

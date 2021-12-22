@@ -7,7 +7,7 @@ import (
 )
 
 func suicide(s disgord.Session, m *disgord.MessageCreate) {
-	guildSession := safeGetGuildSession(s, m.Message.GuildID)
+	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
 	m.Message.Reply(
 		context.Background(),
 		s,

@@ -12,7 +12,7 @@ import (
 )
 
 func skip(s disgord.Session, m *disgord.MessageCreate) {
-	guildSession := safeGetGuildSession(s, m.Message.GuildID)
+	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
 	guildSession.RWMutex.RLock()
 	if len(guildSession.Queue) == 0 || guildSession.MusicPlayer.PlaybackState == session.PlaybackStateStopped {
 		m.Message.Reply(

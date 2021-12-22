@@ -18,7 +18,7 @@ import (
 var tempSearchResultsCache = make(map[disgord.Snowflake][]*youtube.SearchResult)
 
 func play(s disgord.Session, m *disgord.MessageCreate) {
-	guildSession := safeGetGuildSession(s, m.Message.GuildID)
+	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
 	var isNotInVoiceChannel = guildSession.VoiceConnection == nil
 	if isNotInVoiceChannel {
 		voiceChannelInit(s, m)
@@ -132,7 +132,7 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 }
 
 func playSecondaryHandler(s disgord.Session, m *disgord.MessageCreate) {
-	guildSession := safeGetGuildSession(s, m.Message.GuildID)
+	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
 	if strings.HasPrefix(m.Message.Content, os.Getenv("BOT_COMMAND_PREFIX")) {
 		return
 	}

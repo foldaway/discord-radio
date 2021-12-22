@@ -8,7 +8,7 @@ import (
 )
 
 func queue(s disgord.Session, m *disgord.MessageCreate) {
-	guildSession := safeGetGuildSession(s, m.Message.GuildID)
+	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
 	guildSession.RWMutex.RLock()
 	if len(guildSession.Queue) == 0 {
 		m.Message.Reply(

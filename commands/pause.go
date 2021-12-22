@@ -8,7 +8,7 @@ import (
 )
 
 func pause(s disgord.Session, m *disgord.MessageCreate) {
-	guildSession := safeGetGuildSession(s, m.Message.GuildID)
+	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
 	switch guildSession.MusicPlayer.PlaybackState {
 	case session.PlaybackStatePaused:
 		m.Message.Reply(

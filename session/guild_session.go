@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/andersfylling/disgord"
 	"github.com/bottleneckco/discord-radio/models"
+	"github.com/bottleneckco/discord-radio/youtube"
 	"log"
 	"os"
 	"sync"
 	"time"
 	"unicode"
 
-	"github.com/bottleneckco/discord-radio/util"
 	"github.com/chrisport/go-lang-detector/langdet"
 )
 
@@ -51,7 +51,7 @@ func (guildSession *GuildSession) Loop() {
 		}
 		if len(guildSession.Queue) == 0 {
 			log.Println("[SCP] Getting from auto playlist")
-			playlistItem, err := util.GenerateAutoPlaylistQueueItem(guildSession.History)
+			playlistItem, err := youtube.GenerateAutoPlaylistQueueItem(guildSession.History)
 			if err != nil {
 				log.Printf("[SCP] Error generating auto playlist item: %s\n", err)
 				time.Sleep(1 * time.Second)
@@ -59,7 +59,7 @@ func (guildSession *GuildSession) Loop() {
 			}
 
 			// Clear history automatically
-			if len(guildSession.History) >= util.GetAutoPlaylistCacheLength() {
+			if len(guildSession.History) >= youtube.GetAutoPlaylistCacheLength() {
 				guildSession.History = make([]string, 0)
 			}
 
@@ -102,7 +102,7 @@ func (guildSession *GuildSession) Loop() {
 		// 		log.Println("Playback error", err)
 		// 	}
 		// }
-		log.Println("[PLAYER] Playing the actual song data")
+		log.Printf("[PLAYER] Playing '%s'\n", song.Title)
 
 		guildSession.History = append(guildSession.History, song.VideoID)
 

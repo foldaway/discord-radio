@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/andersfylling/disgord"
-	"github.com/bottleneckco/discord-radio/util"
+	"github.com/bottleneckco/discord-radio/youtube"
 	"html"
 	"log"
 	"net/url"
@@ -15,7 +15,7 @@ import (
 	"github.com/bottleneckco/discord-radio/models"
 )
 
-var tempSearchResultsCache = make(map[disgord.Snowflake][]util.PlaylistItem)
+var tempSearchResultsCache = make(map[disgord.Snowflake][]youtube.PlaylistItem)
 
 func play(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
@@ -55,11 +55,11 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 		return
 	}
 
-	var playlistItems []util.PlaylistItem
+	var playlistItems []youtube.PlaylistItem
 
 	if url, err := url.ParseRequestURI(messageParts[1]); err == nil {
 		// URL
-		playlistItems, err = util.FetchAllPlaylistItems(url)
+		playlistItems, err = youtube.FetchAllPlaylistItems(url)
 		if err != nil {
 			m.Message.Reply(
 				context.Background(),
@@ -79,7 +79,7 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 
 		var query = strings.Join(messageParts[1:], " ")
 
-		playlistItems, err = util.Search(query, maxResults)
+		playlistItems, err = youtube.Search(query, maxResults)
 		if err != nil {
 			m.Message.Reply(
 				context.Background(),

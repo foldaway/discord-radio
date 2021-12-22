@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/bottleneckco/discord-radio/util"
+	"github.com/bottleneckco/discord-radio/youtube"
 )
 
 // QueueItem represents an item in the music queue
@@ -14,7 +14,7 @@ type QueueItem struct {
 }
 
 // ConvertYouTubePlaylistItem convert a YouTube playlist item into a local QueueItem model
-func ConvertYouTubePlaylistItem(playlistItem util.PlaylistItem) QueueItem {
+func ConvertYouTubePlaylistItem(playlistItem youtube.PlaylistItem) QueueItem {
 	return QueueItem{
 		Title:        playlistItem.Title,
 		ChannelTitle: playlistItem.Uploader,

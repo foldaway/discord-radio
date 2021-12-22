@@ -2,13 +2,13 @@ package commands
 
 import (
 	"github.com/andersfylling/disgord"
+	"github.com/bottleneckco/discord-radio/session"
 	"log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/bottleneckco/discord-radio/models"
 	"github.com/joho/godotenv"
 	"google.golang.org/api/googleapi/transport"
 	youtube "google.golang.org/api/youtube/v3"
@@ -22,22 +22,22 @@ var (
 	SecondaryCommandMap = make(map[string]func(disgord.Session, *disgord.MessageCreate))
 
 	// GuildSessionMap a map of all the guild sessions
-	GuildSessionMap = make(map[disgord.Snowflake]*models.GuildSession)
+	GuildSessionMap = make(map[disgord.Snowflake]*session.GuildSession)
 )
 
-func newGuildSession(guildID disgord.Snowflake, guildName string) models.GuildSession {
-	return models.GuildSession{
+func newGuildSession(guildID disgord.Snowflake, guildName string) session.GuildSession {
+	return session.GuildSession{
 		GuildID:   guildID,
 		GuildName: guildName,
 		RWMutex:   sync.RWMutex{},
-		MusicPlayer: models.MusicPlayer{
-			Control:       make(chan models.MusicPlayerAction),
-			PlaybackState: models.PlaybackStateStopped,
+		MusicPlayer: session.MusicPlayer{
+			Control:       make(chan session.MusicPlayerAction),
+			PlaybackState: session.PlaybackStateStopped,
 		},
 	}
 }
 
-func safeGetGuildSession(s disgord.Session, guildID disgord.Snowflake) *models.GuildSession {
+func safeGetGuildSession(s disgord.Session, guildID disgord.Snowflake) *session.GuildSession {
 	if session, ok := GuildSessionMap[guildID]; ok {
 		return session
 	}

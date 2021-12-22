@@ -4,21 +4,20 @@ import (
 	"context"
 	"fmt"
 	"github.com/andersfylling/disgord"
-
-	"github.com/bottleneckco/discord-radio/models"
+	"github.com/bottleneckco/discord-radio/session"
 )
 
 func pause(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := safeGetGuildSession(s, m.Message.GuildID)
 	switch guildSession.MusicPlayer.PlaybackState {
-	case models.PlaybackStatePaused:
+	case session.PlaybackStatePaused:
 		m.Message.Reply(
 			context.Background(),
 			s,
 			fmt.Sprintf("%s already paused", m.Message.Author.Mention()),
 		)
 		return
-	case models.PlaybackStateStopped:
+	case session.PlaybackStateStopped:
 		m.Message.Reply(
 			context.Background(),
 			s,
@@ -26,7 +25,7 @@ func pause(s disgord.Session, m *disgord.MessageCreate) {
 		)
 		return
 	}
-	guildSession.MusicPlayer.Control <- models.MusicPlayerActionPause
+	guildSession.MusicPlayer.Control <- session.MusicPlayerActionPause
 	m.Message.Reply(
 		context.Background(),
 		s,

@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/andersfylling/disgord"
-
-	"github.com/bottleneckco/discord-radio/models"
+	"github.com/bottleneckco/discord-radio/session"
 )
 
 func resume(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := safeGetGuildSession(s, m.Message.GuildID)
-	if guildSession.MusicPlayer.PlaybackState == models.PlaybackStateStopped {
+	if guildSession.MusicPlayer.PlaybackState == session.PlaybackStateStopped {
 		m.Message.Reply(
 			context.Background(),
 			s,
@@ -18,7 +17,7 @@ func resume(s disgord.Session, m *disgord.MessageCreate) {
 		)
 		return
 	}
-	guildSession.MusicPlayer.Control <- models.MusicPlayerActionResume
+	guildSession.MusicPlayer.Control <- session.MusicPlayerActionResume
 	m.Message.Reply(
 		context.Background(),
 		s,

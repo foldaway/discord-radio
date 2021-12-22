@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/andersfylling/disgord"
+	"github.com/bottleneckco/discord-radio/session"
 	"log"
 	"strconv"
 
@@ -13,7 +14,7 @@ import (
 func skip(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := safeGetGuildSession(s, m.Message.GuildID)
 	guildSession.RWMutex.RLock()
-	if len(guildSession.Queue) == 0 || guildSession.MusicPlayer.PlaybackState == models.PlaybackStateStopped {
+	if len(guildSession.Queue) == 0 || guildSession.MusicPlayer.PlaybackState == session.PlaybackStateStopped {
 		m.Message.Reply(
 			context.Background(),
 			s,
@@ -29,7 +30,7 @@ func skip(s disgord.Session, m *disgord.MessageCreate) {
 		// No args, skip current
 		skippedItem = guildSession.Queue[0]
 		// Queue = append(Queue[:0], Queue[1:]...)
-		guildSession.MusicPlayer.Control <- models.MusicPlayerActionStop
+		guildSession.MusicPlayer.Control <- session.MusicPlayerActionStop
 	} else {
 		choice, err := strconv.ParseInt(m.Message.Content, 10, 64)
 		if err == nil && (choice-1 >= 0 && choice-1 < int64(len(guildSession.Queue))) {

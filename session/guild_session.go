@@ -1,8 +1,9 @@
-package models
+package session
 
 import (
 	"fmt"
 	"github.com/andersfylling/disgord"
+	"github.com/bottleneckco/discord-radio/models"
 	"log"
 	"os"
 	"sync"
@@ -18,7 +19,7 @@ type GuildSession struct {
 	GuildID         disgord.Snowflake
 	GuildName       string
 	RWMutex         sync.RWMutex
-	Queue           []QueueItem // current item = index 0
+	Queue           []models.QueueItem // current item = index 0
 	VoiceConnection disgord.VoiceConnection
 	VoiceChannelID  disgord.Snowflake
 	History         []string // Youtube IDs
@@ -62,7 +63,7 @@ func (guildSession *GuildSession) Loop() {
 				guildSession.History = make([]string, 0)
 			}
 
-			queueItem := ConvertYouTubePlaylistItem(playlistItem)
+			queueItem := models.ConvertYouTubePlaylistItem(playlistItem)
 			guildSession.RWMutex.Lock()
 			guildSession.Queue = append(guildSession.Queue, queueItem)
 			guildSession.RWMutex.Unlock()

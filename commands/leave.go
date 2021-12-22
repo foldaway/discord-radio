@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/andersfylling/disgord"
+	"github.com/bottleneckco/discord-radio/session"
 	"log"
 
-	"github.com/bottleneckco/discord-radio/models"
 	"github.com/bottleneckco/discord-radio/util"
 )
 
@@ -37,8 +37,8 @@ func leave(s disgord.Session, m *disgord.MessageCreate) {
 		guildSession.RWMutex.Lock()
 		guildSession.Queue = guildSession.Queue[0:0]
 		guildSession.RWMutex.Unlock()
-		if guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying {
-			guildSession.MusicPlayer.Control <- models.MusicPlayerActionStop
+		if guildSession.MusicPlayer.PlaybackState == session.PlaybackStatePlaying {
+			guildSession.MusicPlayer.Control <- session.MusicPlayerActionStop
 		}
 		guildSession.VoiceConnection.Close()
 		delete(GuildSessionMap, m.Message.GuildID)

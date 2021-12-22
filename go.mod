@@ -3,6 +3,7 @@ module github.com/bottleneckco/discord-radio
 require (
 	github.com/andersfylling/disgord v0.29.0
 	github.com/chrisport/go-lang-detector v0.0.0-20180912070833-7e13c74bc6e3
+	github.com/fourthclasshonours/dca v1.0.0 // indirect
 	github.com/go-co-op/gocron v0.1.1
 	github.com/joho/godotenv v1.3.0
 	github.com/klauspost/compress v1.13.6 // indirect

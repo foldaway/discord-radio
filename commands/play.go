@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/andersfylling/disgord"
+	"github.com/bottleneckco/discord-radio/util"
 	"html"
 	"log"
 	"net/url"
@@ -12,10 +13,9 @@ import (
 	"strings"
 
 	"github.com/bottleneckco/discord-radio/models"
-	"google.golang.org/api/youtube/v3"
 )
 
-var tempSearchResultsCache = make(map[disgord.Snowflake][]*youtube.SearchResult)
+var tempSearchResultsCache = make(map[disgord.Snowflake][]util.PlaylistItem)
 
 func play(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
@@ -41,7 +41,7 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 		b.WriteString(fmt.Sprintf("%s, you **already have** a pending search query:\n", m.Message.Author.Mention()))
 
 		for index, item := range items {
-			b.WriteString(fmt.Sprintf("`%d.` **%s** `%s`\n", index+1, item.Snippet.Title, item.Snippet.ChannelTitle))
+			b.WriteString(fmt.Sprintf("`%d.` **%s** `%s`\n", index+1, item.Title, item.Uploader))
 		}
 		b.WriteString("\nreply with a single number, no command needed. Anything else will cancel the search.")
 		sentMsg, err := m.Message.Reply(
@@ -54,35 +54,12 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 		}
 		return
 	}
+
+	var playlistItems []util.PlaylistItem
+
 	if url, err := url.ParseRequestURI(messageParts[1]); err == nil {
 		// URL
-		var videoIDs []string
-		if len(url.Query().Get("list")) != 0 {
-			// Playlist URL
-			playlistResponse, err := youtubeService.PlaylistItems.List("contentDetails").PlaylistId(url.Query().Get("list")).MaxResults(50).Do()
-			if err != nil {
-				m.Message.Reply(
-					context.Background(),
-					s,
-					fmt.Sprintf("Error occurred: %s", err),
-				)
-				return
-			}
-			for _, playlistItem := range playlistResponse.Items {
-				videoIDs = append(videoIDs, playlistItem.ContentDetails.VideoId)
-			}
-		} else if len(url.Query().Get("v")) != 0 {
-			// Plain video URL
-			videoIDs = append(videoIDs, url.Query().Get("v"))
-		} else {
-			m.Message.Reply(
-				context.Background(),
-				s,
-				"Unsupported URL",
-			)
-			return
-		}
-		youtubeListings, err := youtubeService.Videos.List("snippet").Id(strings.Join(videoIDs, ",")).Do()
+		playlistItems, err = util.FetchAllPlaylistItems(url)
 		if err != nil {
 			m.Message.Reply(
 				context.Background(),
@@ -91,29 +68,18 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 			)
 			return
 		}
-		guildSession.RWMutex.Lock()
-		for _, youtubeListing := range youtubeListings.Items {
-			guildSession.Queue = append(guildSession.Queue, models.QueueItem{
-				Title:        youtubeListing.Snippet.Title,
-				ChannelTitle: youtubeListing.Snippet.ChannelTitle,
-				Author:       m.Message.Author.Username,
-				VideoID:      youtubeListing.Id,
-				Thumbnail:    youtubeListing.Snippet.Thumbnails.Default.Url,
-			})
-		}
-		guildSession.RWMutex.Unlock()
+
 		m.Message.Reply(
 			context.Background(),
 			s,
-			fmt.Sprintf("%s enqueued %d videos`\n", m.Message.Author.Mention(), len(videoIDs)),
+			fmt.Sprintf("%s enqueued %d videos`\n", m.Message.Author.Mention(), len(playlistItems)),
 		)
 	} else {
 		maxResults, _ := strconv.ParseInt(os.Getenv("BOT_NUM_RESULTS"), 10, 64)
 
 		var query = strings.Join(messageParts[1:], " ")
 
-		call := youtubeService.Search.List("snippet").Q(query).MaxResults(maxResults)
-		response, err := call.Do()
+		playlistItems, err = util.Search(query, maxResults)
 		if err != nil {
 			m.Message.Reply(
 				context.Background(),
@@ -123,17 +89,17 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 			return
 		}
 
-		log.Printf("[PLAY] Found %d results", len(response.Items))
+		log.Printf("[PLAY] Found %d results", len(playlistItems))
 
 		b.WriteString(fmt.Sprintf("%s, here are your search results:\n", m.Message.Author.Mention()))
 
-		for index, item := range response.Items {
-			b.WriteString(fmt.Sprintf("`%d.` **%s** `%s`\n", index+1, html.UnescapeString(item.Snippet.Title), item.Snippet.ChannelTitle))
+		for index, item := range playlistItems {
+			b.WriteString(fmt.Sprintf("`%d.` **%s** `%s`\n", index+1, html.UnescapeString(item.Title), item.Uploader))
 		}
 		b.WriteString("\nreply with a single number, no command needed. Anything else will cancel the search.")
 
 		// Cache for response
-		tempSearchResultsCache[m.Message.Author.ID] = response.Items
+		tempSearchResultsCache[m.Message.Author.ID] = playlistItems
 	}
 
 	sentMsg, err := m.Message.Reply(
@@ -163,13 +129,10 @@ func playSecondaryHandler(s disgord.Session, m *disgord.MessageCreate) {
 	} else if err == nil {
 		chosenItem := tempSearchResultsCache[m.Message.Author.ID][choice-1]
 		guildSession.RWMutex.Lock()
-		guildSession.Queue = append(guildSession.Queue, models.QueueItem{
-			Title:        html.UnescapeString(chosenItem.Snippet.Title),
-			ChannelTitle: chosenItem.Snippet.ChannelTitle,
-			Author:       m.Message.Author.Username,
-			VideoID:      chosenItem.Id.VideoId,
-			Thumbnail:    chosenItem.Snippet.Thumbnails.Default.Url,
-		})
+
+		var queueItem = models.ConvertYouTubePlaylistItem(chosenItem)
+
+		guildSession.Queue = append(guildSession.Queue, queueItem)
 		guildSession.RWMutex.Unlock()
 		avatarURL, err := m.Message.Author.AvatarURL(32, false)
 		if err != nil {
@@ -189,15 +152,12 @@ func playSecondaryHandler(s disgord.Session, m *disgord.MessageCreate) {
 					Name:    "Added to queue",
 					IconURL: avatarURL,
 				},
-				Title: html.UnescapeString(chosenItem.Snippet.Title),
-				Thumbnail: &disgord.EmbedThumbnail{
-					URL: chosenItem.Snippet.Thumbnails.Default.Url,
-				},
-				URL: fmt.Sprintf("https://www.youtube.com/watch?v=%s", chosenItem.Id.VideoId),
+				Title: html.UnescapeString(chosenItem.Title),
+				URL:   fmt.Sprintf("https://www.youtube.com/watch?v=%s", chosenItem.Id),
 				Fields: []*disgord.EmbedField{
 					{
 						Name:  "Channel",
-						Value: chosenItem.Snippet.ChannelTitle,
+						Value: chosenItem.Uploader,
 					},
 				},
 			})

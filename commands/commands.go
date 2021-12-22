@@ -3,15 +3,10 @@ package commands
 import (
 	"github.com/andersfylling/disgord"
 	"github.com/bottleneckco/discord-radio/session"
-	"log"
-	"net/http"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/joho/godotenv"
-	"google.golang.org/api/googleapi/transport"
-	youtube "google.golang.org/api/youtube/v3"
 )
 
 var (
@@ -51,19 +46,8 @@ func findOrCreateGuildSession(s disgord.Session, guildID disgord.Snowflake) *ses
 	return &session
 }
 
-var youtubeService *youtube.Service
-
 func init() {
 	godotenv.Load()
-	var err error
-	client := &http.Client{
-		Transport: &transport.APIKey{Key: os.Getenv("GOOGLE_API_KEY")},
-	}
-
-	youtubeService, err = youtube.New(client)
-	if err != nil {
-		log.Println(err)
-	}
 
 	PrimaryCommandMap["ping"] = ping
 	PrimaryCommandMap["q"] = queue

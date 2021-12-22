@@ -3,10 +3,10 @@ package session
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"github.com/fourthclasshonours/dca"
 	"io"
 	"log"
-	"math"
 	"net/http"
 	"os"
 	"os/exec"
@@ -93,7 +93,7 @@ func (mp *MusicPlayer) PlayStream(stream io.Reader) error {
 	encoder, err := dca.EncodeMem(
 		stream,
 		&dca.EncodeOptions{
-			Volume:        int(math.Round(volume * 256)),
+			Volume:        256,
 			Channels:      2,
 			FrameRate:     48000,
 			FrameDuration: 20,
@@ -102,7 +102,7 @@ func (mp *MusicPlayer) PlayStream(stream io.Reader) error {
 			VBR:           true,
 			Application:   dca.AudioApplicationAudio,
 			CoverFormat:   "jpeg",
-			AudioFilter:   "dynaudnorm=f=500:g=31:n=0",
+			AudioFilter:   fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=%f", volume),
 		},
 	)
 

@@ -1,44 +1,58 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"github.com/andersfylling/disgord"
 	"log"
 
 	"github.com/bottleneckco/discord-radio/models"
 	"github.com/bottleneckco/discord-radio/util"
-	"github.com/bwmarrin/discordgo"
 )
 
-func leave(s *discordgo.Session, m *discordgo.MessageCreate) {
+func leave(s disgord.Session, m *disgord.MessageCreate) {
 	if guildSession, ok := GuildSessionMap[m.Message.GuildID]; ok {
-		userVoiceState, err := util.FindUserVoiceState(s, m.Message.Author.ID)
-		if err != nil {
+		userVoiceState, ok := util.GlobalVoiceStateCache.VoiceStates[m.Message.Author.ID]
+		if !ok {
 			log.Println("No voice state cached")
-			s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s you are not in a voice channel", m.Message.Author.Mention()))
+			m.Message.Reply(
+				context.Background(),
+				s,
+				fmt.Sprintf("%s you are not in a voice channel", m.Message.Author.Mention()),
+			)
 			return
 		}
-		channel, err := s.Channel(userVoiceState.ChannelID)
+		channel, err := s.Channel(userVoiceState.ChannelID).Get()
 		if err != nil {
-			s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s error occurred: %s", m.Message.Author.Mention(), err))
+			m.Message.Reply(
+				context.Background(),
+				s,
+				fmt.Sprintf("%s error occurred: %s", m.Message.Author.Mention(), err),
+			)
 			return
 		}
 
 		// Actual disconnect code
-		var tempVoiceConn = guildSession.VoiceConnection
-		guildSession.VoiceConnection = nil
 
 		guildSession.RWMutex.Lock()
 		guildSession.Queue = guildSession.Queue[0:0]
 		guildSession.RWMutex.Unlock()
-    guildSession.VoiceConnection = nil
-    if guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying {
-      guildSession.MusicPlayer.Control <- models.MusicPlayerActionStop
-    }
-		tempVoiceConn.Disconnect()
+		if guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying {
+			guildSession.MusicPlayer.Control <- models.MusicPlayerActionStop
+		}
+		guildSession.VoiceConnection.Close()
 		delete(GuildSessionMap, m.Message.GuildID)
 
-		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s left '%s'", m.Message.Author.Mention(), channel.Name))
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s left '%s'", m.Message.Author.Mention(), channel.Name),
+		)
 	} else {
-		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s not in voice channel", m.Message.Author.Mention()))
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s not in voice channel", m.Message.Author.Mention()),
+		)
 	}
 }

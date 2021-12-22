@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"github.com/andersfylling/disgord"
 	"log"
 	"os"
 	"sync"
@@ -9,18 +10,17 @@ import (
 	"unicode"
 
 	"github.com/bottleneckco/discord-radio/util"
-	"github.com/bwmarrin/discordgo"
 	"github.com/chrisport/go-lang-detector/langdet"
 )
 
 // GuildSession represents a guild voice session
 type GuildSession struct {
-	GuildID         string
+	GuildID         disgord.Snowflake
 	GuildName       string
 	RWMutex         sync.RWMutex
 	Queue           []QueueItem // current item = index 0
-	VoiceConnection *discordgo.VoiceConnection
-	VoiceChannelID  string
+	VoiceConnection disgord.VoiceConnection
+	VoiceChannelID  disgord.Snowflake
 	History         []string // Youtube IDs
 	MusicPlayer     MusicPlayer
 }
@@ -31,6 +31,8 @@ var (
 
 // Loop session management loop
 func (guildSession *GuildSession) Loop() {
+	go guildSession.OpusLoop()
+
 	for {
 		if guildSession.VoiceConnection == nil {
 			time.Sleep(1 * time.Second)
@@ -114,5 +116,17 @@ func (guildSession *GuildSession) Loop() {
 			guildSession.Queue = guildSession.Queue[1:]
 		}
 		guildSession.RWMutex.Unlock()
+	}
+}
+
+func (guildSession *GuildSession) OpusLoop() {
+	var err error
+
+	for bts := range guildSession.MusicPlayer.PlaybackChannel {
+		err = guildSession.VoiceConnection.SendOpusFrame(bts)
+
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }

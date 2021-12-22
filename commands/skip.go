@@ -1,18 +1,24 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"github.com/andersfylling/disgord"
+	"log"
 	"strconv"
 
 	"github.com/bottleneckco/discord-radio/models"
-	"github.com/bwmarrin/discordgo"
 )
 
-func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
+func skip(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := safeGetGuildSession(s, m.Message.GuildID)
 	guildSession.RWMutex.RLock()
 	if len(guildSession.Queue) == 0 || guildSession.MusicPlayer.PlaybackState == models.PlaybackStateStopped {
-		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s nothing to skip", m.Message.Author.Mention()))
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s nothing to skip", m.Message.Author.Mention()),
+		)
 		guildSession.RWMutex.RUnlock()
 		return
 	}
@@ -30,29 +36,43 @@ func skip(s *discordgo.Session, m *discordgo.MessageCreate) {
 			skippedItem = guildSession.Queue[choice-1]
 			guildSession.Queue = append(guildSession.Queue[:choice-1], guildSession.Queue[choice:]...)
 		} else {
-			s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s invalid choice", m.Message.Author.Mention()))
+			m.Message.Reply(
+				context.Background(),
+				s,
+				fmt.Sprintf("%s invalid choice", m.Message.Author.Mention()),
+			)
 			guildSession.RWMutex.Unlock()
 			return
 		}
 	}
 	guildSession.RWMutex.Unlock()
 
-	avatarURL := m.Message.Author.AvatarURL("32")
+	avatarURL, err := m.Message.Author.AvatarURL(32, false)
+	if err != nil {
+		log.Println(err)
+		m.Message.Reply(
+			context.Background(),
+			s,
+			"An error occurred",
+		)
+		return
+	}
 
-	s.ChannelMessageSendEmbed(
-		m.Message.ChannelID,
-		&discordgo.MessageEmbed{
-			Author: &discordgo.MessageEmbedAuthor{
+	m.Message.Reply(
+		context.Background(),
+		s,
+		&disgord.Embed{
+			Author: &disgord.EmbedAuthor{
 				Name:    "Removed from queue",
 				IconURL: avatarURL,
 			},
 			Title: skippedItem.Title,
-			Thumbnail: &discordgo.MessageEmbedThumbnail{
+			Thumbnail: &disgord.EmbedThumbnail{
 				URL: skippedItem.Thumbnail,
 			},
 			URL: fmt.Sprintf("https://www.youtube.com/watch?v=%s", skippedItem.VideoID),
-			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{
+			Fields: []*disgord.EmbedField{
+				{
 					Name:  "Queued by",
 					Value: skippedItem.Author,
 				},

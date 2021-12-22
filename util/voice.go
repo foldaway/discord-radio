@@ -1,32 +1,34 @@
 package util
 
 import (
-	"errors"
-
-	"github.com/bwmarrin/discordgo"
+	"github.com/andersfylling/disgord"
+	"sync"
 )
 
-func FindUserVoiceState(session *discordgo.Session, userid string) (*discordgo.VoiceState, error) {
-	for _, guild := range session.State.Guilds {
-		for _, vs := range guild.VoiceStates {
-			if vs.UserID == userid {
-				return vs, nil
-			}
-		}
+var (
+	GlobalVoiceStateCache = VoiceStateCache{
+		VoiceStates: make(map[disgord.Snowflake]*disgord.VoiceState),
 	}
-	return nil, errors.New("Could not find user's voice state")
+)
+
+// VoiceStateCache manual implementation of a voice state cache
+// adapted from https://github.com/andersfylling/disgord/issues/288#issuecomment-657728535
+type VoiceStateCache struct {
+	VoiceStates map[disgord.Snowflake]*disgord.VoiceState
+	mutex       sync.RWMutex
 }
 
-func GetChannelVoiceStates(session *discordgo.Session, guildID, channelID string) []*discordgo.VoiceState {
-	var states []*discordgo.VoiceState
-
-	for _, guild := range session.State.Guilds {
-		for _, vs := range guild.VoiceStates {
-			if vs.ChannelID == channelID {
-				states = append(states, vs)
-			}
-		}
+func (c *VoiceStateCache) Handle(s disgord.Session, voiceState *disgord.VoiceState) {
+	user, err := s.User(voiceState.UserID).Get()
+	if err != nil || user.Bot {
+		return
 	}
 
-	return states
+	if voiceState.ChannelID.IsZero() {
+		// This is a leave voice channel event
+		delete(c.VoiceStates, voiceState.UserID)
+	} else {
+		// Either freshly joined or switched voice channel
+		c.VoiceStates[voiceState.UserID] = voiceState
+	}
 }

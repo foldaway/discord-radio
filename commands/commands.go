@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"github.com/andersfylling/disgord"
 	"log"
 	"net/http"
 	"os"
@@ -8,16 +9,23 @@ import (
 	"time"
 
 	"github.com/bottleneckco/discord-radio/models"
-	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"google.golang.org/api/googleapi/transport"
 	youtube "google.golang.org/api/youtube/v3"
 )
 
-// CommandsMap a map of all the command handlers
-var CommandsMap = make(map[string]func(*discordgo.Session, *discordgo.MessageCreate))
+var (
+	// PrimaryCommandMap a map of all the primary command handlers
+	PrimaryCommandMap = make(map[string]func(disgord.Session, *disgord.MessageCreate))
 
-func newGuildSession(guildID, guildName string) models.GuildSession {
+	// SecondaryCommandMap a map of all the secondary command handlers
+	SecondaryCommandMap = make(map[string]func(disgord.Session, *disgord.MessageCreate))
+
+	// GuildSessionMap a map of all the guild sessions
+	GuildSessionMap = make(map[disgord.Snowflake]*models.GuildSession)
+)
+
+func newGuildSession(guildID disgord.Snowflake, guildName string) models.GuildSession {
 	return models.GuildSession{
 		GuildID:   guildID,
 		GuildName: guildName,
@@ -29,15 +37,12 @@ func newGuildSession(guildID, guildName string) models.GuildSession {
 	}
 }
 
-// GuildSessionMap a map of all the guild sessions
-var GuildSessionMap = make(map[string]*models.GuildSession)
-
-func safeGetGuildSession(s *discordgo.Session, guildID string) *models.GuildSession {
+func safeGetGuildSession(s disgord.Session, guildID disgord.Snowflake) *models.GuildSession {
 	if session, ok := GuildSessionMap[guildID]; ok {
 		return session
 	}
 	var guildName string
-	guild, err := s.Guild(guildID)
+	guild, err := s.Guild(guildID).Get()
 	if err == nil {
 		guildName = guild.Name
 	}
@@ -60,21 +65,28 @@ func init() {
 		log.Println(err)
 	}
 
-	CommandsMap["ping"] = ping
-	CommandsMap["q"] = queue
-	CommandsMap["queue"] = queue
-	CommandsMap["play"] = play
-	CommandsMap["suicide"] = suicide
-	CommandsMap["skip"] = skip
-	CommandsMap["join"] = join
-	CommandsMap["pause"] = pause
-	CommandsMap["resume"] = resume
-	CommandsMap["help"] = help
-	CommandsMap["leave"] = leave
-	CommandsMap["status"] = status
+	PrimaryCommandMap["ping"] = ping
+	PrimaryCommandMap["q"] = queue
+	PrimaryCommandMap["queue"] = queue
+	PrimaryCommandMap["play"] = play
+	PrimaryCommandMap["suicide"] = suicide
+	PrimaryCommandMap["skip"] = skip
+	PrimaryCommandMap["join"] = join
+	PrimaryCommandMap["pause"] = pause
+	PrimaryCommandMap["resume"] = resume
+	PrimaryCommandMap["help"] = help
+	PrimaryCommandMap["leave"] = leave
+	PrimaryCommandMap["status"] = status
+
+	SecondaryCommandMap["play"] = playSecondaryHandler
 }
 
-func deleteMessageDelayed(s *discordgo.Session, msg *discordgo.Message) {
+func deleteMessageDelayed(s disgord.Session, msg *disgord.Message) {
 	time.Sleep(20 * time.Second)
-	s.ChannelMessageDelete(msg.ChannelID, msg.ID)
+
+	s.Channel(msg.ChannelID).DeleteMessages(&disgord.DeleteMessagesParams{
+		Messages: []disgord.Snowflake{
+			msg.ID,
+		},
+	})
 }

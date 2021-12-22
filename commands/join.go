@@ -1,60 +1,85 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"github.com/andersfylling/disgord"
 	"log"
 	"os"
 	"os/exec"
 
 	"github.com/bottleneckco/discord-radio/util"
-	"github.com/bwmarrin/discordgo"
 )
 
-func join(s *discordgo.Session, m *discordgo.MessageCreate) {
+func join(s disgord.Session, m *disgord.MessageCreate) {
 	voiceChannelInit(s, m)
 	guildSession := safeGetGuildSession(s, m.Message.GuildID)
 	go guildSession.Loop()
 }
 
-func voiceChannelInit(s *discordgo.Session, m *discordgo.MessageCreate) {
+func voiceChannelInit(s disgord.Session, m *disgord.MessageCreate) {
 	var guildSession = safeGetGuildSession(s, m.Message.GuildID)
-	var userVoiceState *discordgo.VoiceState
+	var userVoiceState *disgord.VoiceState
 	var err error
 
-	userVoiceState, err = util.FindUserVoiceState(s, m.Message.Author.ID)
-	if err != nil {
-		log.Println(err)
+	userVoiceState, ok := util.GlobalVoiceStateCache.VoiceStates[m.Message.Author.ID]
+	if !ok {
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s you are not in a voice channel.", m.Message.Author.Mention()),
+		)
+		return
 	}
 	if userVoiceState == nil {
-		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s you are not in a voice channel.", m.Message.Author.Mention()))
 		return
 	}
 
-	channel, err := s.Channel(userVoiceState.ChannelID)
+	channel, err := s.Channel(userVoiceState.ChannelID).Get()
 	if err != nil {
 		log.Println(err)
-		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s error occurred: %s", m.Message.Author.Mention(), err))
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s error occurred: %s", m.Message.Author.Mention(), err),
+		)
 		return
 	}
 
-	voiceChannel, err := s.ChannelVoiceJoin(m.Message.GuildID, userVoiceState.ChannelID, false, true)
+	voiceConnection, err := s.
+		Guild(m.Message.GuildID).
+		VoiceChannel(userVoiceState.ChannelID).
+		Connect(false, true)
+
 	if err != nil {
 		log.Println(err)
-		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s error occurred: %s", m.Message.Author.Mention(), err))
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s error occurred: %s", m.Message.Author.Mention(), err),
+		)
 		return
 	}
 
 	// Update guildSession
-	guildSession.VoiceConnection = voiceChannel
+	guildSession.VoiceConnection = voiceConnection
 	guildSession.VoiceChannelID = channel.ID
-	guildSession.MusicPlayer.PlaybackChannel = voiceChannel.OpusSend
+	guildSession.MusicPlayer.PlaybackChannel = make(chan []byte)
 
-	s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s joined '%s'", m.Message.Author.Mention(), channel.Name))
+	m.Message.Reply(
+		context.Background(),
+		s,
+		fmt.Sprintf("%s joined '%s'", m.Message.Author.Mention(), channel.Name),
+	)
 	log.Printf(fmt.Sprintf("%s joined '%s' guild '%s'\n", m.Message.Author.Mention(), channel.Name, m.Message.GuildID))
 
 	//url, _ := googletts.GetTTSURL("Ready", "en")
 	if os.Getenv("BOT_UPDATE_YTDL") == "true" {
-		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s updating youtube-dl binary, give me some time.", m.Message.Author.Mention()))
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s updating youtube-dl binary, give me some time.", m.Message.Author.Mention()),
+		)
 
 		// Update youtube-dl
 		ytdlCmd := exec.Command("/usr/bin/curl", "-L", "https://yt-dl.org/downloads/latest/youtube-dl", "-o", "/usr/local/bin/youtube-dl")
@@ -62,7 +87,11 @@ func voiceChannelInit(s *discordgo.Session, m *discordgo.MessageCreate) {
 		ytdlCmd.Stderr = os.Stderr
 		ytdlCmd.Run()
 
-		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s done!", m.Message.Author.Mention()))
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s done!", m.Message.Author.Mention()),
+		)
 	}
 
 	// Clear youtube-dl cache

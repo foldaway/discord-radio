@@ -1,17 +1,21 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"github.com/andersfylling/disgord"
 	"strings"
-
-	"github.com/bwmarrin/discordgo"
 )
 
-func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
+func queue(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := safeGetGuildSession(s, m.Message.GuildID)
 	guildSession.RWMutex.RLock()
 	if len(guildSession.Queue) == 0 {
-		s.ChannelMessageSend(m.Message.ChannelID, fmt.Sprintf("%s nothing in the queue.", m.Message.Author.Mention()))
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s nothing in the queue.", m.Message.Author.Mention()),
+		)
 		guildSession.RWMutex.RUnlock()
 		return
 	}
@@ -23,5 +27,9 @@ func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		b.WriteString(fmt.Sprintf("`️%d.` **%s <%s>**   ⏫%s\n", index+2, queueItem.Title, fmt.Sprintf("https://youtube.com/watch?v=%s", queueItem.VideoID), queueItem.Author))
 	}
 	guildSession.RWMutex.RUnlock()
-	s.ChannelMessageSend(m.Message.ChannelID, b.String())
+	m.Message.Reply(
+		context.Background(),
+		s,
+		b.String(),
+	)
 }

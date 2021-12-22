@@ -7,6 +7,7 @@ import (
 	"github.com/bottleneckco/discord-radio/session"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/bottleneckco/discord-radio/models"
 )
@@ -14,7 +15,7 @@ import (
 func skip(s disgord.Session, m *disgord.MessageCreate) {
 	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
 	guildSession.RWMutex.RLock()
-	if len(guildSession.Queue) == 0 || guildSession.MusicPlayer.PlaybackState == session.PlaybackStateStopped {
+	if len(guildSession.Queue) == 0 {
 		m.Message.Reply(
 			context.Background(),
 			s,
@@ -23,16 +24,28 @@ func skip(s disgord.Session, m *disgord.MessageCreate) {
 		guildSession.RWMutex.RUnlock()
 		return
 	}
+	if guildSession.MusicPlayer.PlaybackState == session.PlaybackStateStopped {
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s nothing is playing", m.Message.Author.Mention()),
+		)
+		guildSession.RWMutex.RUnlock()
+		return
+	}
 	guildSession.RWMutex.RUnlock()
 	guildSession.RWMutex.Lock()
 	var skippedItem models.QueueItem
-	if len(m.Message.Content) == 0 {
+
+	var messageParts = strings.Split(m.Message.Content, " ")
+
+	if len(messageParts) == 1 {
 		// No args, skip current
 		skippedItem = guildSession.Queue[0]
 		// Queue = append(Queue[:0], Queue[1:]...)
 		guildSession.MusicPlayer.Control <- session.MusicPlayerActionStop
 	} else {
-		choice, err := strconv.ParseInt(m.Message.Content, 10, 64)
+		choice, err := strconv.ParseInt(messageParts[1], 10, 64)
 		if err == nil && (choice-1 >= 0 && choice-1 < int64(len(guildSession.Queue))) {
 			skippedItem = guildSession.Queue[choice-1]
 			guildSession.Queue = append(guildSession.Queue[:choice-1], guildSession.Queue[choice:]...)

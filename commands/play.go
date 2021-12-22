@@ -23,6 +23,18 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 	if isNotInVoiceChannel {
 		voiceChannelInit(s, m)
 	}
+
+	var messageParts = strings.Split(m.Message.Content, " ")
+
+	if len(messageParts) == 1 {
+		m.Message.Reply(
+			context.Background(),
+			s,
+			fmt.Sprintf("%s invalid syntax", m.Message.Author.Mention()),
+		)
+		return
+	}
+
 	var b strings.Builder
 	// Terminate if user has a pending search, forgets and uses /play again.
 	if items, ok := tempSearchResultsCache[m.Message.Author.ID]; ok {
@@ -42,7 +54,7 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 		}
 		return
 	}
-	if url, err := url.ParseRequestURI(m.Message.Content); err == nil {
+	if url, err := url.ParseRequestURI(messageParts[1]); err == nil {
 		// URL
 		var videoIDs []string
 		if len(url.Query().Get("list")) != 0 {
@@ -97,7 +109,10 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 		)
 	} else {
 		maxResults, _ := strconv.ParseInt(os.Getenv("BOT_NUM_RESULTS"), 10, 64)
-		call := youtubeService.Search.List("snippet").Q(m.Message.Content).MaxResults(maxResults)
+
+		var query = strings.Join(messageParts[1:], " ")
+
+		call := youtubeService.Search.List("snippet").Q(query).MaxResults(maxResults)
 		response, err := call.Do()
 		if err != nil {
 			m.Message.Reply(

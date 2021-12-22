@@ -122,6 +122,13 @@ func (guildSession *GuildSession) Loop() {
 func (guildSession *GuildSession) OpusLoop() {
 	var err error
 
+	err = guildSession.VoiceConnection.StartSpeaking()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer guildSession.VoiceConnection.StopSpeaking()
+
 	for bts := range guildSession.MusicPlayer.PlaybackChannel {
 		err = guildSession.VoiceConnection.SendOpusFrame(bts)
 

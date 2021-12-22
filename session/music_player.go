@@ -112,6 +112,11 @@ func (mp *MusicPlayer) PlayStream(stream io.Reader) error {
 
 	defer encoder.Cleanup()
 
+	mp.PlaybackState = PlaybackStatePlaying
+	defer func() {
+		mp.PlaybackState = PlaybackStateStopped
+	}()
+
 	for {
 		select {
 		case ctl := <-mp.Control:

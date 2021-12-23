@@ -21,12 +21,18 @@ var (
 	previousCommandMap = make(map[disgord.Snowflake]string)
 
 	client *disgord.Client
+	botID  *disgord.Snowflake
 )
 
 func handleMsg(s disgord.Session, data *disgord.MessageCreate) {
 	var message = data.Message
 	var authorID = message.Author.ID
-	log.Printf("[MSG] '%s'\n", message.Content)
+
+	if *botID == authorID {
+		return
+	}
+
+	log.Printf("[MSG] '%s': '%s'\n", message.Author.Username, message.Content)
 
 	var messageParts = strings.Split(message.Content, " ")
 
@@ -100,6 +106,12 @@ func main() {
 			disgord.EvtGuildMemberRemove,
 		},
 	})
+
+	currentUser, err := client.CurrentUser().Get()
+	if err != nil {
+		log.Panic(err)
+	}
+	botID = &currentUser.ID
 
 	defer client.Gateway().StayConnectedUntilInterrupted()
 

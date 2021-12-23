@@ -139,6 +139,33 @@ func Search(term string, maxResults int64) ([]PlaylistItem, error) {
 	return playlist.Entries, nil
 }
 
+func FetchSingleVideo(url string) (PlaylistItem, error) {
+	var playlistItem PlaylistItem
+	var cmdOutput bytes.Buffer
+
+	var youtubeDL = exec.Command(
+		"youtube-dl",
+		url,
+		"--dump-single-json",
+		"--skip-download",
+		"--flat-playlist",
+	)
+
+	youtubeDL.Stdout = &cmdOutput
+
+	var err = youtubeDL.Run()
+	if err != nil {
+		return playlistItem, err
+	}
+
+	err = json.Unmarshal(cmdOutput.Bytes(), &playlistItem)
+	if err != nil {
+		return playlistItem, err
+	}
+
+	return playlistItem, nil
+}
+
 // GenerateAutoPlaylistQueueItem get a new item from the auto playlist
 func GenerateAutoPlaylistQueueItem(videoIdsToAvoid []string) (PlaylistItem, error) {
 	var chosenListing PlaylistItem

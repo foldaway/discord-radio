@@ -57,22 +57,53 @@ func play(s disgord.Session, m *disgord.MessageCreate) {
 
 	var playlistItems []youtube.PlaylistItem
 
-	if url, err := url.ParseRequestURI(messageParts[1]); err == nil {
-		// URL
-		playlistItems, err = youtube.FetchAllPlaylistItems(url)
-		if err != nil {
-			m.Message.Reply(
-				context.Background(),
-				s,
-				fmt.Sprintf("Error occurred: %s", err),
-			)
-			return
+	if inputURL, err := url.ParseRequestURI(messageParts[1]); err == nil {
+		var isYouTubeURL = strings.HasSuffix(inputURL.Host, "youtube.com")
+		var isVideoURL = isYouTubeURL && inputURL.Path == "/watch" && inputURL.Query().Has("v")
+		var isPlaylistURL = isYouTubeURL && inputURL.Path == "/playlist" && inputURL.Query().Has("list")
+
+		if isVideoURL {
+			playlistItem, err := youtube.FetchSingleVideo(inputURL.String())
+			if err != nil {
+				m.Message.Reply(
+					context.Background(),
+					s,
+					fmt.Sprintf("Error occurred: %s", err),
+				)
+				return
+			}
+
+			playlistItems = []youtube.PlaylistItem{
+				playlistItem,
+			}
+		} else if isPlaylistURL {
+			// URL
+			playlistItems, err = youtube.FetchAllPlaylistItems(inputURL)
+			if err != nil {
+				m.Message.Reply(
+					context.Background(),
+					s,
+					fmt.Sprintf("Error occurred: %s", err),
+				)
+				return
+			}
 		}
+
+		guildSession.RWMutex.Lock()
+		for _, playlistItem := range playlistItems {
+			var queueItem = models.ConvertYouTubePlaylistItem(playlistItem)
+
+			guildSession.Queue = append(
+				guildSession.Queue,
+				queueItem,
+			)
+		}
+		guildSession.RWMutex.Unlock()
 
 		m.Message.Reply(
 			context.Background(),
 			s,
-			fmt.Sprintf("%s enqueued %d videos`\n", m.Message.Author.Mention(), len(playlistItems)),
+			fmt.Sprintf("%s enqueued %d videos\n", m.Message.Author.Mention(), len(playlistItems)),
 		)
 	} else {
 		maxResults, _ := strconv.ParseInt(os.Getenv("BOT_NUM_RESULTS"), 10, 64)

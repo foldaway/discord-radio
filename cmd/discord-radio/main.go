@@ -1,20 +1,26 @@
 package main
 
 import (
+	"fmt"
 	"github.com/andersfylling/disgord"
 	"github.com/andersfylling/disgord/std"
 	"github.com/bottleneckco/discord-radio/commands"
+	"github.com/bottleneckco/discord-radio/session"
 	"github.com/bottleneckco/discord-radio/util"
+	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 var (
 	commandPrefix = os.Getenv("BOT_COMMAND_PREFIX")
 
 	previousCommandMap = make(map[disgord.Snowflake]string)
+
+	client *disgord.Client
 )
 
 func handleMsg(s disgord.Session, data *disgord.MessageCreate) {
@@ -57,6 +63,30 @@ func handleVoiceStateUpdate(s disgord.Session, data *disgord.VoiceStateUpdate) {
 	util.GlobalVoiceStateCache.Handle(s, data.VoiceState)
 }
 
+func updateBotStatus() {
+	var guildStatuses []string
+
+	for _, guildSession := range commands.GuildSessionMap {
+		if len(guildSession.Queue) > 0 && guildSession.MusicPlayer.PlaybackState == session.PlaybackStatePlaying {
+			song := guildSession.Queue[0]
+			guildStatuses = append(
+				guildStatuses,
+				fmt.Sprintf("[%s] (1 of %d) %s", util.GenerateAcronym(guildSession.GuildName), len(guildSession.Queue), song.Title),
+			)
+		}
+	}
+
+	var statusString = strings.Join(guildStatuses, " | ")
+
+	var err = client.UpdateStatusString(statusString)
+
+	log.Println("[STATUS]", statusString)
+
+	if err != nil {
+		log.Println("Error updating bot status", err)
+	}
+}
+
 func main() {
 	godotenv.Load()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -64,7 +94,7 @@ func main() {
 	//var session *discordgo.Session
 	//var err error
 
-	client := disgord.New(disgord.Config{
+	client = disgord.New(disgord.Config{
 		ProjectName: os.Getenv("BOT_NICKNAME"),
 		BotToken:    os.Getenv("DISCORD_TOKEN"),
 		RejectEvents: []string{
@@ -100,24 +130,11 @@ func main() {
 	//	log.Panic(err)
 	//}
 	//
-	//var scheduler = gocron.NewScheduler(time.Local)
-	//
-	//scheduler.Every(5).Seconds().Do(func() {
-	//	var sb strings.Builder
-	//	for _, guildSession := range commands.GuildSessionMap {
-	//		if len(guildSession.Queue) > 0 && guildSession.MusicPlayer.PlaybackState == models.PlaybackStatePlaying {
-	//			song := guildSession.Queue[0]
-	//			sb.WriteString(fmt.Sprintf("[%s] (1 of %d) %s | ", util.GenerateAcronym(guildSession.GuildName), len(guildSession.Queue), song.Title))
-	//		}
-	//	}
-	//	if sb.Len() > 0 {
-	//		session.UpdateStatus(0, sb.String())
-	//	} else {
-	//		session.UpdateStatus(1, "")
-	//	}
-	//
-	//})
-	//scheduler.Start()
+	var scheduler = gocron.NewScheduler(time.Local)
+
+	scheduler.Every(15).Seconds().Do(updateBotStatus)
+	scheduler.Start()
+
 	//
 	//session.AddHandler(func(s *discordgo.Session, event *discordgo.MessageCreate) {
 	//	log.Printf("[MESSAGE] %s: '%s'\n", event.Author.Username, event.Message.Content)

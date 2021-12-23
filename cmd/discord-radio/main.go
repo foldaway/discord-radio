@@ -20,7 +20,7 @@ var (
 func handleMsg(s disgord.Session, data *disgord.MessageCreate) {
 	var message = data.Message
 	var authorID = message.Author.ID
-	log.Printf("%+v\n", *message)
+	log.Printf("[MSG] '%s'\n", message.Content)
 
 	var messageParts = strings.Split(message.Content, " ")
 

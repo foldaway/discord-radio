@@ -13,8 +13,7 @@ import (
 
 func join(s disgord.Session, m *disgord.MessageCreate) {
 	voiceChannelInit(s, m)
-	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
-	go guildSession.Loop()
+	findOrCreateGuildSession(s, m.Message.GuildID)
 }
 
 func voiceChannelInit(s disgord.Session, m *disgord.MessageCreate) {
@@ -62,7 +61,7 @@ func voiceChannelInit(s disgord.Session, m *disgord.MessageCreate) {
 	}
 
 	// Update guildSession
-	guildSession.VoiceConnection = voiceConnection
+	guildSession.VoiceConnection = &voiceConnection
 	guildSession.VoiceChannelID = channel.ID
 	guildSession.MusicPlayer.PlaybackChannel = make(chan []byte)
 

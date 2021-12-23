@@ -14,7 +14,9 @@ func suicide(s disgord.Session, m *disgord.MessageCreate) {
 		"Goodbye, cruel world!",
 	)
 	if guildSession.VoiceConnection != nil {
-		guildSession.VoiceConnection.Close()
+		var voiceConnection = *guildSession.VoiceConnection
+
+		voiceConnection.Close()
 	}
 	os.Exit(1)
 }

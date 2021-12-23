@@ -40,7 +40,12 @@ func leave(s disgord.Session, m *disgord.MessageCreate) {
 		if guildSession.MusicPlayer.PlaybackState == session.PlaybackStatePlaying {
 			guildSession.MusicPlayer.Control <- session.MusicPlayerActionStop
 		}
-		guildSession.VoiceConnection.Close()
+
+		if guildSession.VoiceConnection != nil {
+			var voiceConnection = *guildSession.VoiceConnection
+			voiceConnection.Close()
+		}
+
 		delete(GuildSessionMap, m.Message.GuildID)
 
 		m.Message.Reply(

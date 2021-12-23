@@ -20,7 +20,7 @@ type GuildSession struct {
 	GuildName       string
 	RWMutex         sync.RWMutex
 	Queue           []models.QueueItem // current item = index 0
-	VoiceConnection disgord.VoiceConnection
+	VoiceConnection *disgord.VoiceConnection
 	VoiceChannelID  disgord.Snowflake
 	History         []string // Youtube IDs
 	MusicPlayer     MusicPlayer
@@ -32,13 +32,15 @@ var (
 
 // Loop session management loop
 func (guildSession *GuildSession) Loop() {
+	var err error
 	go guildSession.OpusLoop()
 
 	for {
 		if guildSession.VoiceConnection == nil {
 			time.Sleep(1 * time.Second)
-			return
+			continue
 		}
+
 		if guildSession.MusicPlayer.PlaybackState != PlaybackStateStopped {
 			log.Println("[SCP] currently playing something!")
 			time.Sleep(1 * time.Second)
@@ -106,10 +108,24 @@ func (guildSession *GuildSession) Loop() {
 
 		guildSession.History = append(guildSession.History, song.VideoID)
 
+		var voiceConnection = *guildSession.VoiceConnection
+
+		err = voiceConnection.StartSpeaking()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
 		// NOTE: Only YouTube is supported for now
 		var err = guildSession.MusicPlayer.PlayYouTubeVideo(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID))
 		if err != nil {
 			log.Println("Playback error", err)
+		}
+
+		err = voiceConnection.StopSpeaking()
+		if err != nil {
+			log.Println(err)
+			return
 		}
 
 		guildSession.RWMutex.Lock()
@@ -123,18 +139,20 @@ func (guildSession *GuildSession) Loop() {
 func (guildSession *GuildSession) OpusLoop() {
 	var err error
 
-	err = guildSession.VoiceConnection.StartSpeaking()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer guildSession.VoiceConnection.StopSpeaking()
+	for {
+		if guildSession.VoiceConnection == nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
 
-	for bts := range guildSession.MusicPlayer.PlaybackChannel {
-		err = guildSession.VoiceConnection.SendOpusFrame(bts)
+		var voiceConnection = *guildSession.VoiceConnection
 
+		var bts = <-guildSession.MusicPlayer.PlaybackChannel
+
+		err = voiceConnection.SendOpusFrame(bts)
 		if err != nil {
 			log.Println(err)
 		}
 	}
+
 }

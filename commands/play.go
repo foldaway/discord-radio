@@ -169,9 +169,4 @@ func playSecondaryHandler(s disgord.Session, m *disgord.MessageCreate) {
 		)
 	}
 	delete(tempSearchResultsCache, m.Message.Author.ID)
-
-	var isNotInVoiceChannel = guildSession.VoiceConnection == nil
-	if isNotInVoiceChannel {
-		go guildSession.Loop()
-	}
 }

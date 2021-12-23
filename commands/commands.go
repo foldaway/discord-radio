@@ -43,6 +43,9 @@ func findOrCreateGuildSession(s disgord.Session, guildID disgord.Snowflake) *ses
 	}
 	session := createGuildSession(guildID, guildName)
 	GuildSessionMap[guildID] = &session
+
+	go session.Loop()
+
 	return &session
 }
 

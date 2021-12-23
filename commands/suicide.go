@@ -1,16 +1,22 @@
 package commands
 
 import (
+	"context"
+	"github.com/andersfylling/disgord"
 	"os"
-
-	"github.com/bwmarrin/discordgo"
 )
 
-func suicide(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guildSession := safeGetGuildSession(s, m.Message.GuildID)
-	s.ChannelMessageSend(m.Message.ChannelID, "Goodbye, cruel world!")
+func suicide(s disgord.Session, m *disgord.MessageCreate) {
+	guildSession := findOrCreateGuildSession(s, m.Message.GuildID)
+	m.Message.Reply(
+		context.Background(),
+		s,
+		"Goodbye, cruel world!",
+	)
 	if guildSession.VoiceConnection != nil {
-		guildSession.VoiceConnection.Close()
+		var voiceConnection = *guildSession.VoiceConnection
+
+		voiceConnection.Close()
 	}
 	os.Exit(1)
 }

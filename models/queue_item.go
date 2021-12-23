@@ -1,7 +1,7 @@
 package models
 
 import (
-	youtube "google.golang.org/api/youtube/v3"
+	"github.com/bottleneckco/discord-radio/youtube"
 )
 
 // QueueItem represents an item in the music queue
@@ -14,12 +14,12 @@ type QueueItem struct {
 }
 
 // ConvertYouTubePlaylistItem convert a YouTube playlist item into a local QueueItem model
-func ConvertYouTubePlaylistItem(playlistItem *youtube.PlaylistItem) QueueItem {
+func ConvertYouTubePlaylistItem(playlistItem youtube.PlaylistItem) QueueItem {
 	return QueueItem{
-		Title:        playlistItem.Snippet.Title,
-		ChannelTitle: playlistItem.Snippet.ChannelTitle,
+		Title:        playlistItem.Title,
+		ChannelTitle: playlistItem.Uploader,
 		Author:       "AutoPlaylist",
-		VideoID:      playlistItem.ContentDetails.VideoId,
-		Thumbnail:    playlistItem.Snippet.Thumbnails.Default.Url,
+		VideoID:      playlistItem.Id,
+		Thumbnail:    "",
 	}
 }

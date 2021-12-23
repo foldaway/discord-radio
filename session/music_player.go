@@ -1,10 +1,10 @@
-package models
+package session
 
 import (
 	"bufio"
 	"bytes"
-	"encoding/binary"
 	"fmt"
+	"github.com/fourthclasshonours/dca"
 	"io"
 	"log"
 	"net/http"
@@ -68,7 +68,7 @@ func (mp *MusicPlayer) PlayYouTubeVideo(youtubeURL string) error {
 		return err
 	}
 
-	ytdlbuf := bufio.NewReaderSize(ytdlout, 16384)
+	ytdlbuf := bufio.NewReaderSize(ytdlout, 5*1000*1000)
 	err = ytdl.Start()
 	if err != nil {
 		return err
@@ -89,71 +89,33 @@ func (mp *MusicPlayer) PlayURL(url string) error {
 }
 
 // Huge thanks to https://github.com/iopred/bruxism/blob/master/musicplugin/musicplugin.go
-func (mp *MusicPlayer) PlayStream(stream *bufio.Reader) error {
-	var ffmpeg = exec.Command(
-		"ffmpeg",
-		"-hide_banner",
-		"-nostats",
-		"-loglevel",
-		"error",
-		"-i",
-		"pipe:0",
-		"-f",
-		"s16le",
-		"-ar",
-		"48000",
-		"-ac",
-		"2",
-		"-af",
-		fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=%f", volume),
-		"-b:a",
-		"256k",
-		"pipe:1",
+func (mp *MusicPlayer) PlayStream(stream io.Reader) error {
+	encoder, err := dca.EncodeMem(
+		stream,
+		&dca.EncodeOptions{
+			Volume:        256,
+			Channels:      2,
+			FrameRate:     48000,
+			FrameDuration: 20,
+			Bitrate:       256,
+			Threads:       0,
+			VBR:           true,
+			Application:   dca.AudioApplicationAudio,
+			CoverFormat:   "jpeg",
+			AudioFilter:   fmt.Sprintf("dynaudnorm=f=500:g=31:n=0:p=%f", volume),
+		},
 	)
-	ffmpeg.Stdin = stream
-	ffmpeg.Stderr = os.Stderr
-	ffmpegout, err := ffmpeg.StdoutPipe()
-	if err != nil {
-		log.Println("ffmpeg StdoutPipe err:", err)
-		return err
-	}
-	ffmpegbuf := bufio.NewReaderSize(ffmpegout, 1000000)
 
-	dca := exec.Command("dca")
-	dca.Stdin = ffmpegbuf
-	dca.Stderr = os.Stderr
-	dcaout, err := dca.StdoutPipe()
 	if err != nil {
-		log.Println("dca StdoutPipe err:", err)
 		return err
 	}
 
-	var dcabuf = bufio.NewReaderSize(dcaout, 1000000)
+	defer encoder.Cleanup()
 
 	mp.PlaybackState = PlaybackStatePlaying
 	defer func() {
 		mp.PlaybackState = PlaybackStateStopped
 	}()
-
-	err = ffmpeg.Start()
-	if err != nil {
-		log.Println("ffmpeg Start error", err)
-		return err
-	}
-
-	err = dca.Start()
-	if err != nil {
-		log.Println("dca Start error", err)
-		return err
-	}
-
-	defer func() {
-		dca.Process.Kill()
-		ffmpeg.Process.Kill()
-	}()
-
-	// header "buffer"
-	var opuslen int16
 
 	for {
 		select {
@@ -186,34 +148,14 @@ func (mp *MusicPlayer) PlayStream(stream *bufio.Reader) error {
 		default:
 		}
 
-		if ffmpeg.ProcessState != nil && ffmpeg.ProcessState.Exited() {
-			return nil
-		} else if dca.ProcessState != nil && dca.ProcessState.Exited() {
-			log.Println("DCA exited early. Something wrong during playback")
-			return nil
-		}
+		var opusFrame []byte
+		var err error
 
-		// read dca opus length header
-		err = binary.Read(dcabuf, binary.LittleEndian, &opuslen)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return err
-		}
+		opusFrame, err = encoder.OpusFrame()
 		if err != nil {
-			log.Println("read opus length from dca err:", err)
 			return err
 		}
 
-		// read opus data from dca
-		opus := make([]byte, opuslen)
-		err = binary.Read(dcabuf, binary.LittleEndian, &opus)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return err
-		}
-		if err != nil {
-			log.Println("read opus from dca err:", err)
-			return err
-		}
-
-		mp.PlaybackChannel <- opus
+		mp.PlaybackChannel <- opusFrame
 	}
 }

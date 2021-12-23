@@ -1,80 +1,79 @@
 package commands
 
 import (
-	"log"
-	"net/http"
-	"os"
+	"github.com/andersfylling/disgord"
+	"github.com/bottleneckco/discord-radio/session"
 	"sync"
 	"time"
 
-	"github.com/bottleneckco/discord-radio/models"
-	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-	"google.golang.org/api/googleapi/transport"
-	youtube "google.golang.org/api/youtube/v3"
 )
 
-// CommandsMap a map of all the command handlers
-var CommandsMap = make(map[string]func(*discordgo.Session, *discordgo.MessageCreate))
+var (
+	// PrimaryCommandMap a map of all the primary command handlers
+	PrimaryCommandMap = make(map[string]func(disgord.Session, *disgord.MessageCreate))
 
-func newGuildSession(guildID, guildName string) models.GuildSession {
-	return models.GuildSession{
+	// SecondaryCommandMap a map of all the secondary command handlers
+	SecondaryCommandMap = make(map[string]func(disgord.Session, *disgord.MessageCreate))
+
+	// GuildSessionMap a map of all the guild sessions
+	GuildSessionMap = make(map[disgord.Snowflake]*session.GuildSession)
+)
+
+func createGuildSession(guildID disgord.Snowflake, guildName string) session.GuildSession {
+	return session.GuildSession{
 		GuildID:   guildID,
 		GuildName: guildName,
 		RWMutex:   sync.RWMutex{},
-		MusicPlayer: models.MusicPlayer{
-			Control:       make(chan models.MusicPlayerAction),
-			PlaybackState: models.PlaybackStateStopped,
+		MusicPlayer: session.MusicPlayer{
+			Control:       make(chan session.MusicPlayerAction),
+			PlaybackState: session.PlaybackStateStopped,
 		},
 	}
 }
 
-// GuildSessionMap a map of all the guild sessions
-var GuildSessionMap = make(map[string]*models.GuildSession)
-
-func safeGetGuildSession(s *discordgo.Session, guildID string) *models.GuildSession {
+func findOrCreateGuildSession(s disgord.Session, guildID disgord.Snowflake) *session.GuildSession {
 	if session, ok := GuildSessionMap[guildID]; ok {
 		return session
 	}
 	var guildName string
-	guild, err := s.Guild(guildID)
+	guild, err := s.Guild(guildID).Get()
 	if err == nil {
 		guildName = guild.Name
 	}
-	session := newGuildSession(guildID, guildName)
+	session := createGuildSession(guildID, guildName)
 	GuildSessionMap[guildID] = &session
+
+	go session.Loop()
+
 	return &session
 }
 
-var youtubeService *youtube.Service
-
 func init() {
 	godotenv.Load()
-	var err error
-	client := &http.Client{
-		Transport: &transport.APIKey{Key: os.Getenv("GOOGLE_API_KEY")},
-	}
 
-	youtubeService, err = youtube.New(client)
-	if err != nil {
-		log.Println(err)
-	}
+	PrimaryCommandMap["ping"] = ping
+	PrimaryCommandMap["q"] = queue
+	PrimaryCommandMap["queue"] = queue
+	PrimaryCommandMap["play"] = play
+	PrimaryCommandMap["suicide"] = suicide
+	PrimaryCommandMap["skip"] = skip
+	PrimaryCommandMap["join"] = join
+	PrimaryCommandMap["pause"] = pause
+	PrimaryCommandMap["resume"] = resume
+	PrimaryCommandMap["help"] = help
+	PrimaryCommandMap["leave"] = leave
+	PrimaryCommandMap["status"] = status
 
-	CommandsMap["ping"] = ping
-	CommandsMap["q"] = queue
-	CommandsMap["queue"] = queue
-	CommandsMap["play"] = play
-	CommandsMap["suicide"] = suicide
-	CommandsMap["skip"] = skip
-	CommandsMap["join"] = join
-	CommandsMap["pause"] = pause
-	CommandsMap["resume"] = resume
-	CommandsMap["help"] = help
-	CommandsMap["leave"] = leave
-	CommandsMap["status"] = status
+	SecondaryCommandMap["play"] = playSecondaryHandler
 }
 
-func deleteMessageDelayed(s *discordgo.Session, msg *discordgo.Message) {
+func deleteMessageDelayed(s disgord.Session, msg *disgord.Message) {
 	time.Sleep(20 * time.Second)
-	s.ChannelMessageDelete(msg.ChannelID, msg.ID)
+
+	s.Channel(msg.ChannelID).DeleteMessages(&disgord.DeleteMessagesParams{
+		Messages: []disgord.Snowflake{
+			msg.ID,
+		},
+	})
 }

@@ -1,26 +1,27 @@
-package models
+package session
 
 import (
 	"fmt"
+	"github.com/andersfylling/disgord"
+	"github.com/bottleneckco/discord-radio/models"
+	"github.com/bottleneckco/discord-radio/youtube"
 	"log"
 	"os"
 	"sync"
 	"time"
 	"unicode"
 
-	"github.com/bottleneckco/discord-radio/util"
-	"github.com/bwmarrin/discordgo"
 	"github.com/chrisport/go-lang-detector/langdet"
 )
 
 // GuildSession represents a guild voice session
 type GuildSession struct {
-	GuildID         string
+	GuildID         disgord.Snowflake
 	GuildName       string
 	RWMutex         sync.RWMutex
-	Queue           []QueueItem // current item = index 0
-	VoiceConnection *discordgo.VoiceConnection
-	VoiceChannelID  string
+	Queue           []models.QueueItem // current item = index 0
+	VoiceConnection *disgord.VoiceConnection
+	VoiceChannelID  disgord.Snowflake
 	History         []string // Youtube IDs
 	MusicPlayer     MusicPlayer
 }
@@ -31,11 +32,15 @@ var (
 
 // Loop session management loop
 func (guildSession *GuildSession) Loop() {
+	var err error
+	go guildSession.OpusLoop()
+
 	for {
 		if guildSession.VoiceConnection == nil {
 			time.Sleep(1 * time.Second)
-			return
+			continue
 		}
+
 		if guildSession.MusicPlayer.PlaybackState != PlaybackStateStopped {
 			log.Println("[SCP] currently playing something!")
 			time.Sleep(1 * time.Second)
@@ -48,7 +53,7 @@ func (guildSession *GuildSession) Loop() {
 		}
 		if len(guildSession.Queue) == 0 {
 			log.Println("[SCP] Getting from auto playlist")
-			playlistItem, err := util.GenerateAutoPlaylistQueueItem(guildSession.History)
+			playlistItem, err := youtube.GenerateAutoPlaylistQueueItem(guildSession.History)
 			if err != nil {
 				log.Printf("[SCP] Error generating auto playlist item: %s\n", err)
 				time.Sleep(1 * time.Second)
@@ -56,11 +61,11 @@ func (guildSession *GuildSession) Loop() {
 			}
 
 			// Clear history automatically
-			if len(guildSession.History) >= util.GetAutoPlaylistCacheLength() {
+			if len(guildSession.History) >= youtube.GetAutoPlaylistCacheLength() {
 				guildSession.History = make([]string, 0)
 			}
 
-			queueItem := ConvertYouTubePlaylistItem(playlistItem)
+			queueItem := models.ConvertYouTubePlaylistItem(playlistItem)
 			guildSession.RWMutex.Lock()
 			guildSession.Queue = append(guildSession.Queue, queueItem)
 			guildSession.RWMutex.Unlock()
@@ -99,14 +104,28 @@ func (guildSession *GuildSession) Loop() {
 		// 		log.Println("Playback error", err)
 		// 	}
 		// }
-		log.Println("[PLAYER] Playing the actual song data")
+		log.Printf("[PLAYER] Playing '%s'\n", song.Title)
 
 		guildSession.History = append(guildSession.History, song.VideoID)
+
+		var voiceConnection = *guildSession.VoiceConnection
+
+		err = voiceConnection.StartSpeaking()
+		if err != nil {
+			log.Println(err)
+			return
+		}
 
 		// NOTE: Only YouTube is supported for now
 		var err = guildSession.MusicPlayer.PlayYouTubeVideo(fmt.Sprintf("https://www.youtube.com/watch?v=%s", song.VideoID))
 		if err != nil {
 			log.Println("Playback error", err)
+		}
+
+		err = voiceConnection.StopSpeaking()
+		if err != nil {
+			log.Println(err)
+			return
 		}
 
 		guildSession.RWMutex.Lock()
@@ -115,4 +134,25 @@ func (guildSession *GuildSession) Loop() {
 		}
 		guildSession.RWMutex.Unlock()
 	}
+}
+
+func (guildSession *GuildSession) OpusLoop() {
+	var err error
+
+	for {
+		if guildSession.VoiceConnection == nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		var voiceConnection = *guildSession.VoiceConnection
+
+		var bts = <-guildSession.MusicPlayer.PlaybackChannel
+
+		err = voiceConnection.SendOpusFrame(bts)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
 }

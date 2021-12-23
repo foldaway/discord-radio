@@ -68,7 +68,7 @@ func (mp *MusicPlayer) PlayYouTubeVideo(youtubeURL string) error {
 		return err
 	}
 
-	ytdlbuf := bufio.NewReaderSize(ytdlout, 16384)
+	ytdlbuf := bufio.NewReaderSize(ytdlout, 5*1000*1000)
 	err = ytdl.Start()
 	if err != nil {
 		return err
